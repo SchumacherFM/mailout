@@ -1,0 +1,7 @@
+0.0.0.0
+tls off
+mailout /hello
+
+mailout {
+	path /anotherpath
+}
