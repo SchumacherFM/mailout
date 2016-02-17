@@ -6,8 +6,7 @@ Caddy config options:
 
 ```
 mailout endpoint {
-    keybaseio       https://keybase.io/cyrill/key.asc
-	public_key      path/to/pgp.pub
+	public_key      [path/to/pgp.pub|https://keybase.io/cyrill/key.asc]
 	logdir          path/to/logdir
 	
 	success_uri     http://mydomain.com/email_sent_confirmation.html    
