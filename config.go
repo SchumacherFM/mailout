@@ -2,21 +2,25 @@ package mailout
 
 import (
 	"fmt"
+	htpl "html/template"
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
+	ttpl "text/template"
 	"time"
 
-	"strconv"
-
 	"golang.org/x/crypto/openpgp"
-	"golang.org/x/crypto/openpgp/packet"
 )
 
 var httpClient = &http.Client{
 	Timeout: time.Second * 20,
 	// for testing we can exchange Transport with a mock
+}
+
+type renderer interface {
+	Execute(wr io.Writer, data interface{}) (err error)
 }
 
 type config struct {
@@ -29,23 +33,23 @@ type config struct {
 	// primaryKey loaded and parsed publicKey
 	keyEntity *openpgp.Entity
 
-	// logDir a path to log directory for errors and data log.
-	// won't start without a existing directory
-	logDir string
+	// maillog writes each email into one file in a directory.
+	maillog mailogger
 
 	// successUri redirects to this URL after posting the data
 	successUri string
 
 	//to              recipient_to@domain.email
-	to string
+	to []string
 	//cc              recipient_cc1@domain.email, recipient_cc2@domain.email
-	cc string
+	cc []string
 	//bcc             recipient_bcc1@domain.email, recipient_bcc2@domain.email
-	bcc string
+	bcc []string
 	//subject         Email from {{.firstname}} {{.lastname}}
 	subject string
 	//body            path/to/tpl.[txt|html]
-	body string
+	body    string
+	bodyTpl renderer
 
 	//username        [ENV:MY_SMTP_USERNAME|gopher]
 	username string
@@ -56,6 +60,15 @@ type config struct {
 	//port            [ENV:MY_SMTP_PORT|25|587|465]
 	portRaw string
 	port    int
+}
+
+func newConfig() *config {
+	return &config{
+		endpoint:   "/mailout",
+		successUri: "/",
+		host:       "localhost",
+		port:       1025, // mailcatcher (a ruby app) default port
+	}
 }
 
 func (c *config) loadPGPKey() error {
@@ -90,10 +103,15 @@ func (c *config) loadPGPKey() error {
 		defer keyRC.Close()
 	}
 
-	var err error
-	c.keyEntity, err = openpgp.ReadEntity(packet.NewReader(keyRC))
+	keyList, err := openpgp.ReadArmoredKeyRing(keyRC)
 	if err != nil {
 		return fmt.Errorf("Cannot read public key %q: %s", c.publicKey, err)
+	}
+	c.keyEntity = keyList[0]
+
+	if c.keyEntity.PrivateKey != nil {
+		c.keyEntity = nil
+		return fmt.Errorf("PrivateKey found. Not allowed. Please remove it from file: %q", c.publicKey)
 	}
 
 	return nil
@@ -124,14 +142,21 @@ func loadFromEnv(s string) string {
 	return os.Getenv(s[len(envPrefix):])
 }
 
-// IsDir returns true if path is a directory
-func IsDir(path string) bool {
-	fileInfo, err := os.Stat(path)
-	return fileInfo != nil && fileInfo.IsDir() && err == nil
-}
+func (c *config) loadTemplate() (err error) {
+	if false == fileExists(c.body) {
+		return fmt.Errorf("File %q not found", c.body)
+	}
 
-// fileExists returns true if file exists
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
-	return !os.IsNotExist(err)
+	switch c.body[len(c.body)-4:] {
+	case ".txt":
+		c.bodyTpl, err = ttpl.ParseFiles(c.body)
+	case ".html":
+		c.bodyTpl, err = htpl.ParseFiles(c.body)
+	}
+
+	if c.bodyTpl == nil && err == nil {
+		return fmt.Errorf("Incorrect file extension. Neither .txt nor .html: %q", c.body)
+	}
+
+	return err
 }

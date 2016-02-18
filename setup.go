@@ -2,10 +2,13 @@ package mailout
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/mholt/caddy/caddy/setup"
 	"github.com/mholt/caddy/middleware"
 )
+
+const emailSplitBy = ","
 
 func Setup(c *setup.Controller) (middleware.Middleware, error) {
 	mc, err := parse(c)
@@ -44,49 +47,105 @@ func Setup(c *setup.Controller) (middleware.Middleware, error) {
 
 func parse(c *setup.Controller) (mc *config, err error) {
 	// This parses the following config blocks
-	/*
-		mailout /hello
-		mailout /anotherpath
-		mailout {
-			path /hello
-			path /anotherpath
-		}
-	*/
+	mc = newConfig()
 
 	for c.Next() {
 		args := c.RemainingArgs()
+
 		switch len(args) {
-		case 0:
-			// no argument passed, check the config block
-			for c.NextBlock() {
-				println(c.Val())
-				//switch c.Val() {
-				//case "path":
-				//	if !c.NextArg() {
-				//		// we are expecting a value
-				//		return mc, c.ArgErr()
-				//	}
-				//	println( c.Val())
-				//	//paths = append(paths, p)
-				//	if c.NextArg() {
-				//		// we are expecting only one value.
-				//		return mc, c.ArgErr()
-				//	}
-				//}
-			}
 		case 1:
-			// one argument passed
-			//paths = append(mc, args[0])
-			println("1:", c.Val())
-			if c.NextBlock() {
-				// path specified, no block required.
-				return mc, c.ArgErr()
+			mc.endpoint = args[0]
+		}
+
+		for c.NextBlock() {
+			var err error
+			switch c.Val() {
+			case "public_key":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				mc.publicKey = c.Val()
+			case "logdir":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+
+				mc.maillog = newMailLogger(c.Val())
+
+			case "success_uri":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				mc.successUri = c.Val()
+			case "to":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				mc.to, err = splitEmailAddresses(c.Val())
+				if err != nil {
+					return nil, err
+				}
+			case "cc":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				mc.cc, err = splitEmailAddresses(c.Val())
+				if err != nil {
+					return nil, err
+				}
+			case "bcc":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				mc.bcc, err = splitEmailAddresses(c.Val())
+				if err != nil {
+					return nil, err
+				}
+			case "subject":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				mc.subject = c.Val()
+			case "body":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				mc.body = c.Val()
+			case "username":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				mc.username = c.Val()
+			case "password":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				mc.password = c.Val()
+			case "host":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				mc.host = c.Val()
+			case "port":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				mc.portRaw = c.Val()
 			}
-		default:
-			println("default", c.Val())
-			// we want only one argument max
-			return mc, c.ArgErr()
 		}
 	}
+
 	return
+}
+
+func splitEmailAddresses(s string) ([]string, error) {
+	// maybe we're adding validation
+	ret := strings.Split(s, emailSplitBy)
+	for i, val := range ret {
+		ret[i] = strings.TrimSpace(val)
+		if ret[i] == "" {
+			return nil, fmt.Errorf("Empty Email address found in: %q", s)
+		}
+	}
+	return ret, nil
 }
