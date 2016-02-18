@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"strconv"
+
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/openpgp/packet"
 )
@@ -18,7 +20,10 @@ var httpClient = &http.Client{
 }
 
 type config struct {
-	// publicKey path or URL [path/to/pgp.pub|https://keybase.io/cyrill/key.asc]
+	// endpoint the route name where we receive the post requests
+	endpoint string
+
+	// publicKey path, ENV or URL [path/to/pgp.pub|https://keybase.io/cyrill/key.asc]
 	// only loads from https
 	publicKey string
 	// primaryKey loaded and parsed publicKey
@@ -49,7 +54,8 @@ type config struct {
 	//host            [ENV:MY_SMTP_HOST|smtp.gmail.com]
 	host string
 	//port            [ENV:MY_SMTP_PORT|25|587|465]
-	port int
+	portRaw string
+	port    int
 }
 
 func (c *config) loadPGPKey() error {
@@ -93,12 +99,29 @@ func (c *config) loadPGPKey() error {
 	return nil
 }
 
+func (c *config) loadFromEnv() error {
+	var err error
+	c.publicKey = loadFromEnv(c.publicKey)
+	c.username = loadFromEnv(c.username)
+	c.password = loadFromEnv(c.password)
+	c.host = loadFromEnv(c.host)
+	c.portRaw = loadFromEnv(c.portRaw)
+	c.port, err = strconv.Atoi(c.portRaw)
+	return err
+}
+
+func (c *config) pingSMTP() error {
+	// todo check if credentials are valid
+	// only output anything on error
+	return nil
+}
+
 func loadFromEnv(s string) string {
 	const envPrefix = `ENV:`
-	if strings.Index(s,envPrefix) != 0 {
+	if strings.Index(s, envPrefix) != 0 {
 		return s
 	}
-	// os.Getenv()
+	return os.Getenv(s[len(envPrefix):])
 }
 
 // IsDir returns true if path is a directory
