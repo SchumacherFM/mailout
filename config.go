@@ -14,9 +14,8 @@ import (
 	"golang.org/x/crypto/openpgp"
 )
 
-var httpClient = &http.Client{
+var defaultHttpClient = &http.Client{
 	Timeout: time.Second * 20,
-	// for testing we can exchange Transport with a mock
 }
 
 type renderer interface {
@@ -31,7 +30,8 @@ type config struct {
 	// only loads from https
 	publicKey string
 	// primaryKey loaded and parsed publicKey
-	keyEntity *openpgp.Entity
+	keyEntity  *openpgp.Entity
+	httpClient *http.Client
 
 	// maillog writes each email into one file in a directory.
 	maillog mailogger
@@ -65,6 +65,7 @@ type config struct {
 func newConfig() *config {
 	return &config{
 		endpoint:   "/mailout",
+		httpClient: defaultHttpClient,
 		successUri: "/",
 		host:       "localhost",
 		port:       1025, // mailcatcher (a ruby app) default port
@@ -79,8 +80,8 @@ func (c *config) loadPGPKey() error {
 
 	var keyRC io.ReadCloser
 	if strings.Index(c.publicKey, "https://") == 0 {
-		httpData, err := httpClient.Get(c.publicKey)
-		if httpData.Body != nil {
+		httpData, err := c.httpClient.Get(c.publicKey)
+		if httpData != nil {
 			keyRC = httpData.Body
 			defer keyRC.Close()
 		}

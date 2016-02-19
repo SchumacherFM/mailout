@@ -1,43 +1,132 @@
 package mailout
 
 import (
-	"testing"
 	"errors"
+	"fmt"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"testing"
+
+	"path"
+
 	"github.com/mholt/caddy/caddy/setup"
 	"github.com/stretchr/testify/assert"
-	"bufio"
-	"strings"
 )
 
 var _ http.RoundTripper = (*mockTransport)(nil)
 
 type mockTransport struct {
-	resp func() *http.Response
-	err  error
+	Transport http.RoundTripper
+	URL       *url.URL
 }
 
-func (mt *mockTransport) RoundTrip(*http.Request) (*http.Response, error) {
-	return mt.resp(), mt.err
+func (mt mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	// note that url.URL.ResolveReference doesn't work here
+	// since t.u is an absolute url
+	req.URL.Scheme = mt.URL.Scheme
+	req.URL.Host = mt.URL.Host
+	req.URL.Path = path.Join(mt.URL.Path, req.URL.Path)
+	rt := mt.Transport
+	if rt == nil {
+		rt = http.DefaultTransport
+	}
+	return rt.RoundTrip(req)
 }
 
-func TestConfigLoadPGPKey(t *testing.T) {
-	orgTransport := httpClient.Transport
-	defer func() {
-		httpClient.Transport = orgTransport
-	}()
+func mockServerTransport(code int, body string) func() (*httptest.Server,http.RoundTripper) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(code)
+		w.Header().Set("Content-Type", "text/plain")
+		fmt.Fprintln(w, body)
+	}))
+
+	srvUrl, err := url.Parse(server.URL)
+	if err != nil {
+		panic(err)
+	}
+	tr := mockTransport{URL: srvUrl}
+
+	return func() (*httptest.Server, http.RoundTripper) { return server, tr }
+}
+
+func TestConfigLoadPGPKeyHTTPS(t *testing.T) {
 
 	tests := []struct {
-		config       string
-		expectErr    error
-		keyNil       bool
-		roundTripper http.RoundTripper
+		config     string
+		expectErr  error
+		keyNil     bool
+		serverMock func() (*httptest.Server, http.RoundTripper)
+	}{
+		{
+			`mailout {
+				public_key https://keybase.io/cyrill/keyNOTFOUND.asc
+			}`,
+			errors.New("Loading remote public key failed from URL \"https://keybase.io/cyrill/keyNOTFOUND.asc\". StatusCode have 404 StatusCode want 200"),
+			true,
+			mockServerTransport(http.StatusNotFound, "Not found"),
+		},
+		{
+			`mailout {
+				public_key https://keybase.io/cyrill/B06469EE_nopw.pub.asc
+			}`,
+			errors.New("Cannot read public key \"https://keybase.io/cyrill/B06469EE_nopw.pub.asc\": openpgp: invalid argument: no armored data found"),
+			true,
+			mockServerTransport(http.StatusOK, "I'm hacking ..."),
+		},
+		{
+			`mailout {
+				public_key https://keybase.io/cyrill/B06469EE_nopw.pub.asc
+			}`,
+			nil,
+			false,
+			mockServerTransport(http.StatusOK, testPubKey),
+		},
+	}
+	for i, test := range tests {
+
+		srv, trsp := test.serverMock()
+
+		c := setup.NewTestController(test.config)
+		mc, err := parse(c)
+		if err != nil {
+			srv.Close()
+			t.Fatal("Index", i, "Error:", err)
+		}
+
+		mc.httpClient.Transport = trsp
+
+		err = mc.loadPGPKey()
+		srv.Close()
+		if test.keyNil && test.expectErr == nil {
+			assert.NoError(t, err, "Index %d", i)
+			assert.Nil(t, mc.keyEntity, "Index %d", i)
+			continue
+		}
+
+		if test.expectErr != nil {
+			assert.Nil(t, mc.keyEntity, "Index %d", i)
+			assert.EqualError(t, err, test.expectErr.Error(), "Index %d", i)
+			continue
+		}
+		assert.NoError(t, err, "Index %d", i)
+		assert.NotNil(t, mc.keyEntity, "Index %d", i)
+		assert.NotNil(t, mc.keyEntity.PrimaryKey, "Index %d", i)
+		assert.Nil(t, mc.keyEntity.PrivateKey, "Index %d", i)
+	}
+}
+
+func TestConfigLoadPGPKeyHDD(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		config    string
+		expectErr error
+		keyNil    bool
 	}{
 		{
 			`mailout`,
 			nil,
 			true,
-			nil,
 		},
 		{
 			`mailout {
@@ -45,7 +134,6 @@ func TestConfigLoadPGPKey(t *testing.T) {
 			}`,
 			nil,
 			false,
-			nil,
 		},
 		{
 			`mailout {
@@ -53,7 +141,6 @@ func TestConfigLoadPGPKey(t *testing.T) {
 			}`,
 			errors.New("PrivateKey found. Not allowed. Please remove it from file: \"testdata/B06469EE_nopw.priv.asc\""),
 			true,
-			nil,
 		},
 		{
 			`mailout {
@@ -61,26 +148,6 @@ func TestConfigLoadPGPKey(t *testing.T) {
 			}`,
 			errors.New("File \"http://keybase.io/cyrill/key.asc\" not found"),
 			true,
-			nil,
-		},
-		{
-			`mailout {
-				public_key https://keybase.io/cyrill/keyNOTFOUND.asc
-			}`,
-			errors.New("File \"http://keybase.io/cyrill/key.asc\" not found"),
-			true,
-			&mockTransport{
-				resp: func() *http.Response {
-					resp, err := http.ReadResponse(bufio.NewReader(strings.NewReader("HTTP/1.0 200 OK\r\n" +
-					"Connection: close\r\n" +
-					"\r\n" +
-					"Body here\n")), &http.Request{Method: "GET"})
-					if err != nil {
-						t.Fatal(err)
-					}
-					return resp
-				},
-			},
 		},
 	}
 	for i, test := range tests {
@@ -89,10 +156,6 @@ func TestConfigLoadPGPKey(t *testing.T) {
 		mc, err := parse(c)
 		if err != nil {
 			t.Fatal("Index", i, "Error:", err)
-		}
-
-		if test.roundTripper != nil {
-			httpClient.Transport = test.roundTripper
 		}
 
 		err = mc.loadPGPKey()
@@ -113,3 +176,57 @@ func TestConfigLoadPGPKey(t *testing.T) {
 		assert.Nil(t, mc.keyEntity.PrivateKey, "Index %d", i)
 	}
 }
+
+const testPubKey = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+Comment: GPGTools - http://gpgtools.org
+
+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
+V4sIaARfoWRiSvBACooywFQwjpbuPIc=
+=M5xL
+-----END PGP PUBLIC KEY BLOCK-----
+`
