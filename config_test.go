@@ -10,6 +10,8 @@ import (
 
 	"path"
 
+	"os"
+
 	"github.com/mholt/caddy/caddy/setup"
 	"github.com/stretchr/testify/assert"
 )
@@ -34,7 +36,7 @@ func (mt mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return rt.RoundTrip(req)
 }
 
-func mockServerTransport(code int, body string) func() (*httptest.Server,http.RoundTripper) {
+func mockServerTransport(code int, body string) func() (*httptest.Server, http.RoundTripper) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(code)
 		w.Header().Set("Content-Type", "text/plain")
@@ -51,7 +53,7 @@ func mockServerTransport(code int, body string) func() (*httptest.Server,http.Ro
 }
 
 func TestConfigLoadPGPKeyHTTPS(t *testing.T) {
-
+	t.Parallel()
 	tests := []struct {
 		config     string
 		expectErr  error
@@ -230,3 +232,89 @@ V4sIaARfoWRiSvBACooywFQwjpbuPIc=
 =M5xL
 -----END PGP PUBLIC KEY BLOCK-----
 `
+
+func TestLoadFromEnv(t *testing.T) {
+	t.Parallel()
+
+	const testCaddyConfig = `mailout {
+	public_key 		ENV:CADDY_MAILOUT_KEY
+	username		ENV:CADDY_MAILOUT_USER
+	password		ENV:CADDY_MAILOUT_PW
+	host            ENV:CADDY_MAILOUT_HOST
+	port            ENV:CADDY_MAILOUT_PORT
+}`
+
+	assert.NoError(t, os.Setenv("CADDY_MAILOUT_KEY", "testdata/B06469EE_nopw.pub.asc"))
+	assert.NoError(t, os.Setenv("CADDY_MAILOUT_USER", "luser"))
+	assert.NoError(t, os.Setenv("CADDY_MAILOUT_PW", "123456"))
+	assert.NoError(t, os.Setenv("CADDY_MAILOUT_HOST", "127.0.0.4"))
+	assert.NoError(t, os.Setenv("CADDY_MAILOUT_PORT", "29"))
+
+	wantConfig := newConfig()
+	wantConfig.publicKey = `testdata/B06469EE_nopw.pub.asc`
+	wantConfig.username = "luser"
+	wantConfig.password = "123456"
+	wantConfig.host = "127.0.0.4"
+	wantConfig.portRaw = "29"
+	wantConfig.port = 29
+
+	c := setup.NewTestController(testCaddyConfig)
+	mc, err := parse(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := mc.loadFromEnv(); err != nil {
+		t.Fatal(err)
+	}
+	assert.Exactly(t, wantConfig, mc)
+}
+
+func TestLoadTemplate(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		caddyfile string
+		wantErr   error
+	}{
+		{
+			`mailout {
+				body            testdata/mail_tpl_NOTFOUND.html
+			}`,
+			errors.New("File \"testdata/mail_tpl_NOTFOUND.html\" not found"),
+		},
+		{
+			`mailout {
+				body            testdata/mail_tpl.phtml
+			}`,
+			errors.New("Incorrect file extension. Neither .txt nor .html: \"testdata/mail_tpl.phtml\""),
+		},
+		{
+			`mailout {
+				body            testdata/mail_tpl.html
+			}`,
+			nil,
+		},
+		{
+			`mailout {
+				body            testdata/mail_tpl.txt
+			}`,
+			nil,
+		},
+	}
+	for i, test := range tests {
+		c := setup.NewTestController(test.caddyfile)
+		mc, err := parse(c)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		tplErr := mc.loadTemplate()
+
+		if test.wantErr != nil {
+			assert.Nil(t, mc.bodyTpl)
+			assert.EqualError(t, tplErr, test.wantErr.Error(), "Index %d ", i)
+			continue
+		}
+		assert.NoError(t, tplErr, "Index %d ", i)
+		assert.NotNil(t, mc.bodyTpl, "Index %d ", i)
+	}
+}

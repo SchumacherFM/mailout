@@ -11,6 +11,8 @@ import (
 	ttpl "text/template"
 	"time"
 
+	"path/filepath"
+
 	"golang.org/x/crypto/openpgp"
 )
 
@@ -148,7 +150,7 @@ func (c *config) loadTemplate() (err error) {
 		return fmt.Errorf("File %q not found", c.body)
 	}
 
-	switch c.body[len(c.body)-4:] {
+	switch filepath.Ext(c.body) {
 	case ".txt":
 		c.bodyTpl, err = ttpl.ParseFiles(c.body)
 	case ".html":

@@ -1,9 +1,8 @@
 package mailout
 
 import (
-	"testing"
-
 	"errors"
+	"testing"
 
 	"github.com/mholt/caddy/caddy/setup"
 	"github.com/stretchr/testify/assert"
