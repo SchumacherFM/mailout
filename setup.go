@@ -1,48 +1,59 @@
 package mailout
 
 import (
-	"fmt"
-	"strings"
+	"errors"
 
 	"github.com/mholt/caddy/caddy/setup"
 	"github.com/mholt/caddy/middleware"
 )
 
-const emailSplitBy = ","
-
-func Setup(c *setup.Controller) (middleware.Middleware, error) {
-	mc, err := parse(c)
+func Setup(c *setup.Controller) (mw middleware.Middleware, err error) {
+	var mc *config
+	mc, err = parse(c)
 	if err != nil {
 		return nil, err
 	}
 
 	// Runs on Caddy startup, useful for services or other setups.
-	c.Startup = append(c.Startup, func() error {
 
-		if err := mc.loadFromEnv(); err != nil {
-			return err
+	if c.ServerBlockHostIndex == 0 {
+		// only run when the first hostname has been loaded.
+
+		if err = mc.loadFromEnv(); err != nil {
+			return
 		}
-		if err := mc.loadPGPKey(); err != nil {
-			return err
+		if err = mc.loadPGPKey(); err != nil {
+			return
+		}
+		if err = mc.loadTemplate(); err != nil {
+			return
+		}
+		if err = mc.pingSMTP(); err != nil {
+			return
 		}
 
-		fmt.Println("\nmailout middleware is initiated")
-		return nil
-	})
+		c.ServerBlockStorage = &handler{
+			config: mc,
+		}
+		// fmt.Printf("mailout middleware initiated for Hosts: %s\n",strings.Join(c.ServerBlockHosts,", "))
+	}
 
 	// Runs on Caddy shutdown, useful for cleanups.
 	c.Shutdown = append(c.Shutdown, func() error {
 		// quit mail daemon
-		fmt.Println("\nmailout middleware is cleaning up")
+		// fmt.Println("\nmailout middleware is cleaning up")
 		return nil
 	})
 
-	return func(next middleware.Handler) middleware.Handler {
-		return &handler{
-			Paths: nil,
-			Next:  next,
+	if moh, ok := c.ServerBlockStorage.(*handler); ok { // moh = mailOutHandler ;-)
+		mw = func(next middleware.Handler) middleware.Handler {
+			moh.Next = next
+			return moh
 		}
-	}, nil
+		return
+	}
+	err = errors.New("mailout: Could not create the middleware")
+	return
 }
 
 func parse(c *setup.Controller) (mc *config, err error) {
@@ -136,16 +147,4 @@ func parse(c *setup.Controller) (mc *config, err error) {
 	}
 
 	return
-}
-
-func splitEmailAddresses(s string) ([]string, error) {
-	// maybe we're adding validation
-	ret := strings.Split(s, emailSplitBy)
-	for i, val := range ret {
-		ret[i] = strings.TrimSpace(val)
-		if ret[i] == "" {
-			return nil, fmt.Errorf("Empty Email address found in: %q", s)
-		}
-	}
-	return ret, nil
 }

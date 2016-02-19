@@ -6,14 +6,17 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	ttpl "text/template"
 	"time"
-	"path/filepath"
+
 	"golang.org/x/crypto/openpgp"
 	"gopkg.in/gomail.v2"
 )
+
+const emailSplitBy = ","
 
 var defaultHttpClient = &http.Client{
 	Timeout: time.Second * 20,
@@ -164,4 +167,16 @@ func (c *config) loadTemplate() (err error) {
 	}
 
 	return err
+}
+
+func splitEmailAddresses(s string) ([]string, error) {
+	// maybe we're adding validation
+	ret := strings.Split(s, emailSplitBy)
+	for i, val := range ret {
+		ret[i] = strings.TrimSpace(val)
+		if ret[i] == "" {
+			return nil, fmt.Errorf("Empty Email address found in: %q", s)
+		}
+	}
+	return ret, nil
 }
