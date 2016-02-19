@@ -3,6 +3,8 @@ package mailout
 import (
 	"errors"
 
+	"fmt"
+
 	"github.com/mholt/caddy/caddy/setup"
 	"github.com/mholt/caddy/middleware"
 )
@@ -13,8 +15,6 @@ func Setup(c *setup.Controller) (mw middleware.Middleware, err error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// Runs on Caddy startup, useful for services or other setups.
 
 	if c.ServerBlockHostIndex == 0 {
 		// only run when the first hostname has been loaded.
@@ -32,8 +32,11 @@ func Setup(c *setup.Controller) (mw middleware.Middleware, err error) {
 			return
 		}
 
+		mailPipe := startMailDaemon(mc)
+
 		c.ServerBlockStorage = &handler{
-			config: mc,
+			reqPipe: mailPipe,
+			config:  mc,
 		}
 		// fmt.Printf("mailout middleware initiated for Hosts: %s\n",strings.Join(c.ServerBlockHosts,", "))
 	}
@@ -41,7 +44,15 @@ func Setup(c *setup.Controller) (mw middleware.Middleware, err error) {
 	// Runs on Caddy shutdown, useful for cleanups.
 	c.Shutdown = append(c.Shutdown, func() error {
 		// quit mail daemon
-		// fmt.Println("\nmailout middleware is cleaning up")
+
+		if moh, ok := c.ServerBlockStorage.(*handler); ok {
+			if moh.reqPipe != nil {
+				close(moh.reqPipe)
+				moh.reqPipe = nil
+				fmt.Println("mailout middleware has been cleaned up")
+			}
+		}
+
 		return nil
 	})
 
@@ -82,12 +93,6 @@ func parse(c *setup.Controller) (mc *config, err error) {
 				}
 
 				mc.maillog = newMailLogger(c.Val())
-
-			case "success_uri":
-				if !c.NextArg() {
-					return nil, c.ArgErr()
-				}
-				mc.successUri = c.Val()
 			case "to":
 				if !c.NextArg() {
 					return nil, c.ArgErr()

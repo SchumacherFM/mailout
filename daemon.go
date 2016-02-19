@@ -2,41 +2,46 @@ package mailout
 
 import (
 	"log"
+	"net/http"
 	"time"
 
 	"gopkg.in/gomail.v2"
 )
 
-func Example_daemon() {
-	ch := make(chan *gomail.Message)
+func startMailDaemon(mc *config) chan<- *http.Request {
+	rChan := make(chan *http.Request)
 
 	go func() {
-		d := gomail.NewPlainDialer("smtp.example.com", 587, "user", "123456")
+		d := gomail.NewPlainDialer(mc.host, mc.port, mc.username, mc.password)
 
 		var s gomail.SendCloser
 		var err error
 		open := false
 		for {
 			select {
-			case m, ok := <-ch:
+			case r, ok := <-rChan:
 				if !ok {
 					return
 				}
 				if !open {
 					if s, err = d.Dial(); err != nil {
-						panic(err)
+						panic(err) // todo remove
+						// add exponential backoff strategy
 					}
 					open = true
 				}
-				if err := gomail.Send(s, m); err != nil {
-					log.Print(err)
+
+				msg := newMessage(mc, r).build()
+
+				if err := gomail.Send(s, msg); err != nil {
+					log.Println(err)
 				}
 			// Close the connection to the SMTP server if no email was sent in
 			// the last 30 seconds.
 			case <-time.After(30 * time.Second):
 				if open {
 					if err := s.Close(); err != nil {
-						panic(err)
+						log.Println(err)
 					}
 					open = false
 				}
@@ -44,8 +49,5 @@ func Example_daemon() {
 		}
 	}()
 
-	// Use the channel in your program to send emails.
-
-	// Close the channel to stop the mail daemon.
-	close(ch)
+	return rChan
 }

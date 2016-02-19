@@ -5,23 +5,51 @@ import (
 
 	"fmt"
 
+	"encoding/json"
+
+	"github.com/SchumacherFM/mailout/bufpool"
 	"github.com/mholt/caddy/middleware"
 )
 
 type handler struct {
-	config *config
-	Next   middleware.Handler
+	reqPipe chan<- *http.Request
+	config  *config
+	Next    middleware.Handler
 }
 
-func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error) {
-	// if the request path is any of the configured paths
-	// write hello
-
-	if middleware.Path(r.URL.Path).Matches(h.config.endpoint) {
-		fmt.Fprintf(w, "endpoint: %s", h.config.endpoint)
-		w.Write([]byte("Hello, I'm a caddy middleware"))
-		return 200, nil
+func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error) {
+	if r.URL.Path != h.config.endpoint || r.Method != "POST" {
+		return h.Next.ServeHTTP(w, r)
 	}
 
-	return h.Next.ServeHTTP(w, r)
+	if err := r.ParseForm(); err != nil {
+		return http.StatusInternalServerError, err
+	}
+
+	if e := r.PostFormValue("email"); false == isValidEmail(e) {
+		return writeJSON(JSONError{
+			Error: fmt.Sprintf("Invalid email address: %q", e),
+		}, w)
+	}
+
+	h.reqPipe <- r
+
+	return writeJSON(JSONError{}, w)
+}
+
+type JSONError struct {
+	Error string `json:"error,omitempty"`
+}
+
+func writeJSON(je JSONError, w http.ResponseWriter) (int, error) {
+	buf := bufpool.Get()
+	defer bufpool.Put(buf)
+	if err := json.NewEncoder(buf).Encode(je); err != nil {
+		return http.StatusInternalServerError, err
+	}
+	if _, err := w.Write(buf.Bytes()); err != nil {
+		return http.StatusInternalServerError, err
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8") // does not work :-(
+	return http.StatusOK, nil
 }

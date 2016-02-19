@@ -70,7 +70,6 @@ func TestSetupParse(t *testing.T) {
 			func() *config {
 				c := newConfig()
 				c.publicKey = `testdata/B06469EE_nopw.pub.asc`
-				c.successUri = `email_sent_confirmation.html`
 				c.to = []string{"recipient_to@domain.email"}
 				c.cc = []string{"recipient_cc1@domain.email", "recipient_cc2@domain.email"}
 				c.bcc = []string{"recipient_bcc1@domain.email", "recipient_bcc2@domain.email"}
@@ -101,9 +100,9 @@ func TestSetupParse(t *testing.T) {
 		},
 		{
 			`mailout /sendmail {
-				to	"reci,"
+				to	"reci@email.de,"
 			}`,
-			errors.New("Empty Email address found in: \"reci,\""),
+			errors.New("Incorrect Email address found in: \"reci@email.de,\""),
 			func() *config {
 				c := newConfig()
 				c.endpoint = "/sendmail"

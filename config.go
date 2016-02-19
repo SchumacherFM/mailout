@@ -40,9 +40,6 @@ type config struct {
 	// maillog writes each email into one file in a directory.
 	maillog mailogger
 
-	// successUri redirects to this URL after posting the data
-	successUri string
-
 	//to              recipient_to@domain.email
 	to []string
 	//cc              recipient_cc1@domain.email, recipient_cc2@domain.email
@@ -52,8 +49,9 @@ type config struct {
 	//subject         Email from {{.firstname}} {{.lastname}}
 	subject string
 	//body            path/to/tpl.[txt|html]
-	body    string
-	bodyTpl renderer
+	body       string
+	bodyIsHTML bool
+	bodyTpl    renderer
 
 	//username        [ENV:MY_SMTP_USERNAME|gopher]
 	username string
@@ -70,7 +68,6 @@ func newConfig() *config {
 	return &config{
 		endpoint:   "/mailout",
 		httpClient: defaultHttpClient,
-		successUri: "/",
 		host:       "localhost",
 		port:       1025, // mailcatcher (a ruby app) default port
 	}
@@ -159,6 +156,7 @@ func (c *config) loadTemplate() (err error) {
 	case ".txt":
 		c.bodyTpl, err = ttpl.ParseFiles(c.body)
 	case ".html":
+		c.bodyIsHTML = true
 		c.bodyTpl, err = htpl.ParseFiles(c.body)
 	}
 
@@ -174,8 +172,8 @@ func splitEmailAddresses(s string) ([]string, error) {
 	ret := strings.Split(s, emailSplitBy)
 	for i, val := range ret {
 		ret[i] = strings.TrimSpace(val)
-		if ret[i] == "" {
-			return nil, fmt.Errorf("Empty Email address found in: %q", s)
+		if false == isValidEmail(ret[i]) {
+			return nil, fmt.Errorf("Incorrect Email address found in: %q", s)
 		}
 	}
 	return ret, nil

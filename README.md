@@ -8,9 +8,7 @@ Caddy config options:
 mailout endpoint {
 	public_key      [path/to/pgp.pub|https://keybase.io/cyrill/key.asc]
 	maillog          [path/to/logdir|default to os.Stderr]
-	
-	success_uri     http://mydomain.com/email_sent_confirmation.html    
-	
+		
 	to              recipient_to@domain.email        
 	cc              recipient_cc1@domain.email, recipient_cc2@domain.email        
 	bcc             recipient_bcc1@domain.email, recipient_bcc2@domain.email
@@ -26,6 +24,7 @@ mailout endpoint {
 
 - public_key: if provided mails gets encrypted
 - maillog: defaults no logging of emails. Use an existing directory to log all emails. One email in one file.
+- port: SSL/TLS works only with port 465 at the moment 
 
 ### Email template
 
