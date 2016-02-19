@@ -10,10 +10,9 @@ import (
 	"strings"
 	ttpl "text/template"
 	"time"
-
 	"path/filepath"
-
 	"golang.org/x/crypto/openpgp"
+	"gopkg.in/gomail.v2"
 )
 
 var defaultHttpClient = &http.Client{
@@ -132,9 +131,12 @@ func (c *config) loadFromEnv() error {
 }
 
 func (c *config) pingSMTP() error {
-	// todo check if credentials are valid
-	// only output anything on error
-	return nil
+	d := gomail.NewPlainDialer(c.host, c.port, c.username, c.password)
+	sc, err := d.Dial()
+	if err != nil {
+		return err
+	}
+	return sc.Close()
 }
 
 func loadFromEnv(s string) string {

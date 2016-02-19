@@ -318,3 +318,24 @@ func TestLoadTemplate(t *testing.T) {
 		assert.NotNil(t, mc.bodyTpl, "Index %d ", i)
 	}
 }
+
+func TestPingSMTP_OK(t *testing.T) {
+	t.Parallel()
+	if os.Getenv("MAILOUT_MAILCATCHER") == "" {
+		t.Skip("Please set env variable MAILOUT_MAILCATCHER to test pingSMTP on your local machine.")
+	}
+
+	c := newConfig()
+	assert.Nil(t, c.pingSMTP())
+}
+
+func TestPingSMTP_Fail(t *testing.T) {
+	t.Parallel()
+	if os.Getenv("MAILOUT_MAILCATCHER") == "" {
+		t.Skip("Please set env variable MAILOUT_MAILCATCHER to test pingSMTP on your local machine.")
+	}
+
+	c := newConfig()
+	c.port = 4711
+	assert.EqualError(t, c.pingSMTP(), "dial tcp [::1]:4711: getsockopt: connection refused")
+}
