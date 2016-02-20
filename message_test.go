@@ -3,9 +3,9 @@ package mailout
 import (
 	"bytes"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
-	"net/http/httptest"
 	"time"
 
 	"github.com/mholt/caddy/caddy/setup"
@@ -71,10 +71,10 @@ func TestMessagePlainText(t *testing.T) {
 
 	testDoPost(t, srv.URL, data)
 
-	assert.Len(t,buf.String(),424) // whenever you change the template, change also here
-	assert.Contains(t,buf.String(),"Email ken@thompson.email")
-	assert.Contains(t,buf.String(),"Subject: Email from Ken Thompson")
-	assert.Contains(t,buf.String(),"Cc: gopher1@domain.email, gopher2@domain.email")
+	assert.Len(t, buf.String(), 424) // whenever you change the template, change also here
+	assert.Contains(t, buf.String(), "Email ken@thompson.email")
+	assert.Contains(t, buf.String(), "Subject: Email from Ken Thompson")
+	assert.Contains(t, buf.String(), "Cc: gopher1@domain.email, gopher2@domain.email")
 }
 
 func TestMessageHTML(t *testing.T) {
@@ -99,13 +99,12 @@ func TestMessageHTML(t *testing.T) {
 
 	testDoPost(t, srv.URL, data)
 
-	assert.True(t,buf.Len()>10000) // whenever you change the template, change also here
-	assert.Contains(t,buf.String(),"<h3>Thank you for contacting us, Ken Thompson</h3>")
-	assert.Contains(t,buf.String(),"<h3>Sir Ken S. Thompson")
-	assert.Contains(t,buf.String(),"Subject: =?UTF-8?q?=EF=A3=BF_HTML_Email_via_Ken_Thompson?=")
-	assert.NotContains(t,buf.String(),"Bcc: gopherHTML1@domain.email")
+	assert.True(t, buf.Len() > 10000) // whenever you change the template, change also here
+	assert.Contains(t, buf.String(), "<h3>Thank you for contacting us, Ken Thompson</h3>")
+	assert.Contains(t, buf.String(), "<h3>Sir Ken S. Thompson")
+	assert.Contains(t, buf.String(), "Subject: =?UTF-8?q?=EF=A3=BF_HTML_Email_via_Ken_Thompson?=")
+	assert.NotContains(t, buf.String(), "Bcc: gopherHTML1@domain.email")
 }
-
 
 func TestMessagePlainPGP(t *testing.T) {
 	t.Parallel()
@@ -130,9 +129,9 @@ func TestMessagePlainPGP(t *testing.T) {
 
 	testDoPost(t, srv.URL, data)
 
-	assert.Len(t,buf.String(),2255) // whenever you change the template, change also here
-	assert.Contains(t,buf.String(),"Subject: =?UTF-8?q?Encrypted_contact_=F0=9F=94=91?=")
-	assert.Contains(t,buf.String(),"Cc: pgp1@domain.email")
+	assert.Len(t, buf.String(), 2255) // whenever you change the template, change also here
+	assert.Contains(t, buf.String(), "Subject: =?UTF-8?q?Encrypted_contact_=F0=9F=94=91?=")
+	assert.Contains(t, buf.String(), "Cc: pgp1@domain.email")
 
 	//t.Log(buf.String())
 }
@@ -166,7 +165,7 @@ func BenchmarkMessagePlainPGP(b *testing.B) {
 	data.Set("email", "ken@thompson.email")
 	data.Set("name", "Ken Thompson")
 
-	req,err := http.NewRequest("POST","/mailout", nil)
+	req, err := http.NewRequest("POST", "/mailout", nil)
 	if err != nil {
 		b.Fatal(err)
 	}

@@ -36,6 +36,7 @@ func newMessage(mc *config, r *http.Request) message {
 
 func (bm message) build() *gomail.Message {
 	bm.header()
+	bm.renderSubject()
 	if bm.mc.keyEntity != nil {
 		bm.bodyEncrypted()
 	} else {
@@ -45,14 +46,21 @@ func (bm message) build() *gomail.Message {
 }
 
 func (bm message) header() {
+
 	bm.gm.SetHeader("To", bm.mc.to...)
+
 	if len(bm.mc.cc) > 0 {
 		bm.gm.SetHeader("Cc", bm.mc.cc...)
 	}
+
 	if len(bm.mc.bcc) > 0 {
 		bm.gm.SetHeader("Bcc", bm.mc.bcc...)
 	}
 
+	bm.gm.SetAddressHeader("From", bm.r.PostFormValue("email"), bm.r.PostFormValue("name"))
+}
+
+func (bm message) renderSubject() {
 	subjBuf := bufpool.Get()
 	defer bufpool.Put(subjBuf)
 
@@ -64,10 +72,7 @@ func (bm message) header() {
 	if err != nil {
 		bm.mc.maillog.Errorf("Render Subject Error: %s\nForm: %#v\nWritten: %s", err, bm.r.PostForm, subjBuf)
 	}
-
 	bm.gm.SetHeader("Subject", subjBuf.String())
-
-	bm.gm.SetAddressHeader("From", bm.r.PostFormValue("email"), bm.r.PostFormValue("name"))
 }
 
 func (bm message) bodyEncrypted() {
@@ -85,11 +90,13 @@ func (bm message) bodyEncrypted() {
 		bm.mc.maillog.Errorf("PGP encrypt Error: %s", err)
 		return
 	}
+
 	_, err = w.Write(msgBuf.Bytes())
 	if err != nil {
 		bm.mc.maillog.Errorf("PGP encrypt Write Error: %s", err)
 		return
 	}
+
 	err = w.Close()
 	if err != nil {
 		bm.mc.maillog.Errorf("PGP encrypt Close Error: %s", err)
@@ -123,8 +130,10 @@ func (bm message) bodyUnencrypted() {
 	if bm.mc.bodyIsHTML {
 		contentType = "text/html"
 	}
+
 	buf := bufpool.Get()
 	defer bufpool.Put(buf)
+
 	bm.renderTemplate(buf)
 	bm.gm.SetBody(contentType, buf.String())
 }
