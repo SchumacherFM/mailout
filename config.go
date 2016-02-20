@@ -18,6 +18,8 @@ import (
 )
 
 const emailSplitBy = ","
+const emailPublicKeyAttachmentName = "encrypted.gpg"
+const defaultEndpoint = "/mailout"
 
 var defaultHttpClient = &http.Client{
 	Timeout: time.Second * 20,
@@ -37,6 +39,8 @@ type config struct {
 	// primaryKey loaded and parsed publicKey
 	keyEntity  *openpgp.Entity
 	httpClient *http.Client
+	// keyAttachmentName name of the email attachment file.
+	keyAttachmentName string
 
 	// maillog writes each email into one file in a directory. If nil, writes to /dev/null
 	maillog *maillog.Logger
@@ -70,10 +74,11 @@ type config struct {
 
 func newConfig() *config {
 	return &config{
-		endpoint:   "/mailout",
-		httpClient: defaultHttpClient,
-		host:       "localhost",
-		port:       1025, // mailcatcher (a ruby app) default port
+		endpoint:          defaultEndpoint,
+		httpClient:        defaultHttpClient,
+		keyAttachmentName: emailPublicKeyAttachmentName,
+		host:              "localhost",
+		port:              1025, // mailcatcher (a ruby app) default port
 	}
 }
 
@@ -173,7 +178,6 @@ func loadFromEnv(s string) string {
 }
 
 func splitEmailAddresses(s string) ([]string, error) {
-	// maybe we're adding validation
 	ret := strings.Split(s, emailSplitBy)
 	for i, val := range ret {
 		ret[i] = strings.TrimSpace(val)

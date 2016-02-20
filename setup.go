@@ -2,7 +2,6 @@ package mailout
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/SchumacherFM/mailout/maillog"
 	"github.com/mholt/caddy/caddy/setup"
@@ -83,11 +82,16 @@ func parse(c *setup.Controller) (mc *config, err error) {
 					return nil, c.ArgErr()
 				}
 				mc.publicKey = c.Val()
+			case "publickeyAttachmentFileName":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				mc.keyAttachmentName = c.Val()
 			case "logdir":
 				if !c.NextArg() {
 					return nil, c.ArgErr()
 				}
-				mc.maillog = maillog.New(strings.TrimSpace(c.Val()))
+				mc.maillog = maillog.New(c.Val())
 			case "to":
 				if !c.NextArg() {
 					return nil, c.ArgErr()
