@@ -8,7 +8,7 @@ turmhof.local, schumacherfm.local {
         to              "recipient_to@domain.email"
         cc              "recipient_cc1@domain.email, recipient_cc2@domain.email"
         bcc             "recipient_bcc1@domain.email, recipient_bcc2@domain.email"
-        subject         "Email from {{.firstname}} {{.lastname}}"
+        subject         "Text Email from {{.Form.Get \"name\" }}"
         body            "testdata/mail_tpl.html"
 
         # username
@@ -28,8 +28,8 @@ iair.dev, zerobin.dev {
         logdir          testdata/
 
         to              "recipient_to@domain.email"
-        subject         "Email from {{.firstname}} {{.lastname}}"
-        body            "testdata/mail_tpl.html"
+        subject         "PGP Email from {{.Form.Get \"name\" }}"
+        body            "testdata/mail_range.txt"
 
         # username
         # password
