@@ -2,9 +2,9 @@ package mailout
 
 import (
 	"errors"
+	"strings"
 
-	"fmt"
-
+	"github.com/SchumacherFM/mailout/maillog"
 	"github.com/mholt/caddy/caddy/setup"
 	"github.com/mholt/caddy/middleware"
 )
@@ -18,7 +18,9 @@ func Setup(c *setup.Controller) (mw middleware.Middleware, err error) {
 
 	if c.ServerBlockHostIndex == 0 {
 		// only run when the first hostname has been loaded.
-
+		if _, err = mc.maillog.Init(c.ServerBlockHosts...); err != nil {
+			return
+		}
 		if err = mc.loadFromEnv(); err != nil {
 			return
 		}
@@ -38,21 +40,15 @@ func Setup(c *setup.Controller) (mw middleware.Middleware, err error) {
 			reqPipe: mailPipe,
 			config:  mc,
 		}
-		// fmt.Printf("mailout middleware initiated for Hosts: %s\n",strings.Join(c.ServerBlockHosts,", "))
 	}
 
-	// Runs on Caddy shutdown, useful for cleanups.
 	c.Shutdown = append(c.Shutdown, func() error {
-		// quit mail daemon
-
 		if moh, ok := c.ServerBlockStorage.(*handler); ok {
 			if moh.reqPipe != nil {
 				close(moh.reqPipe)
 				moh.reqPipe = nil
-				fmt.Println("mailout middleware has been cleaned up")
 			}
 		}
-
 		return nil
 	})
 
@@ -91,8 +87,7 @@ func parse(c *setup.Controller) (mc *config, err error) {
 				if !c.NextArg() {
 					return nil, c.ArgErr()
 				}
-
-				mc.maillog = newMailLogger(c.Val())
+				mc.maillog = maillog.New(strings.TrimSpace(c.Val()))
 			case "to":
 				if !c.NextArg() {
 					return nil, c.ArgErr()
@@ -150,6 +145,5 @@ func parse(c *setup.Controller) (mc *config, err error) {
 			}
 		}
 	}
-
 	return
 }

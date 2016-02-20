@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 
@@ -66,7 +65,7 @@ func (bm message) bodyEncrypted() {
 	msgBuf := bufpool.Get()
 	defer bufpool.Put(msgBuf)
 
-	bm.render(msgBuf)
+	bm.renderTemplate(msgBuf)
 
 	w, err := openpgp.Encrypt(pgpBuf, openpgp.EntityList{0: bm.mc.keyEntity}, nil, nil, nil)
 	if err != nil {
@@ -103,17 +102,6 @@ func (bm message) bodyEncrypted() {
 	)
 }
 
-func (bm message) render(buf *bytes.Buffer) {
-	err := bm.mc.bodyTpl.Execute(buf, struct {
-		Form url.Values
-	}{
-		Form: bm.r.PostForm,
-	})
-	if err != nil {
-		log.Println(err) // todo better error logging
-	}
-}
-
 func (bm message) bodyUnencrypted() {
 	contentType := "text/plain"
 	if bm.mc.bodyIsHTML {
@@ -121,7 +109,17 @@ func (bm message) bodyUnencrypted() {
 	}
 	buf := bufpool.Get()
 	defer bufpool.Put(buf)
-	bm.render(buf)
-
+	bm.renderTemplate(buf)
 	bm.gm.SetBody(contentType, buf.String())
+}
+
+func (bm message) renderTemplate(buf *bytes.Buffer) {
+	err := bm.mc.bodyTpl.Execute(buf, struct {
+		Form url.Values
+	}{
+		Form: bm.r.PostForm,
+	})
+	if err != nil {
+		bm.mc.maillog.Errorf("Render Error: %s\nForm: %#v\nWritten: %s", err, bm.r.PostForm, buf)
+	}
 }

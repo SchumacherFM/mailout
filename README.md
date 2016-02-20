@@ -6,25 +6,27 @@ Caddy config options:
 
 ```
 mailout endpoint {
-	public_key      [path/to/pgp.pub|https://keybase.io/cyrill/key.asc]
-	maillog          [path/to/logdir|default to os.Stderr]
+	public_key      [path/to/pgp.pub|ENV:MY_PGP_KEY_PATH|https://keybase.io/cyrill/key.asc]
+	maillog         [path/to/logdir|or empty]
 		
-	to              recipient_to@domain.email        
-	cc              recipient_cc1@domain.email, recipient_cc2@domain.email        
-	bcc             recipient_bcc1@domain.email, recipient_bcc2@domain.email
-    subject         Email from {{.firstname}} {{.lastname}}
+	to              recipient_to@domain.email       
+	cc              "recipient_cc1@domain.email, recipient_cc2@domain.email"        
+	bcc             "recipient_bcc1@domain.email, recipient_bcc2@domain.email"
+    subject         "Email from {{.firstname}} {{.lastname}}"
 	body            path/to/tpl.[txt|html]
 	
-	username        [ENV:MY_SMTP_USERNAME|gopher]
-	password        [ENV:MY_SMTP_PASSWORD|g0ph3r]
-	host            [ENV:MY_SMTP_HOST|smtp.gmail.com]
-	port            [ENV:MY_SMTP_PORT|25|587|465]
+	username        "[ENV:MY_SMTP_USERNAME|gopher]"
+	password        "[ENV:MY_SMTP_PASSWORD|g0ph3r]"
+	host            "[ENV:MY_SMTP_HOST|smtp.gmail.com]"
+	port            [ENV:MY_SMTP_PORT|25|465|587]
 }
 ```
 
-- public_key: if provided mails gets encrypted
-- maillog: defaults no logging of emails. Use an existing directory to log all emails. One email in one file.
-- port: SSL/TLS works only with port 465 at the moment 
+- public_key: if provided mails get encrypted. Set a path to a file, an environment variable or an URL to a
+key on a HTTPS site.
+- maillog: Specify a directory, which gets created recursively, and emails plus errors gets logged. Leaving
+the maillog setting empty does not log anything.
+- port: SSL/TLS works only with port 465+587 at the moment 
 
 ### Email template
 

@@ -12,6 +12,7 @@ import (
 	ttpl "text/template"
 	"time"
 
+	"github.com/SchumacherFM/mailout/maillog"
 	"golang.org/x/crypto/openpgp"
 	"gopkg.in/gomail.v2"
 )
@@ -37,8 +38,8 @@ type config struct {
 	keyEntity  *openpgp.Entity
 	httpClient *http.Client
 
-	// maillog writes each email into one file in a directory.
-	maillog mailogger
+	// maillog writes each email into one file in a directory. If nil, writes to /dev/null
+	maillog *maillog.Logger
 
 	//to              recipient_to@domain.email
 	to []string
@@ -139,14 +140,6 @@ func (c *config) pingSMTP() error {
 	return sc.Close()
 }
 
-func loadFromEnv(s string) string {
-	const envPrefix = `ENV:`
-	if strings.Index(s, envPrefix) != 0 {
-		return s
-	}
-	return os.Getenv(s[len(envPrefix):])
-}
-
 func (c *config) loadTemplate() (err error) {
 	if false == fileExists(c.body) {
 		return fmt.Errorf("File %q not found", c.body)
@@ -165,6 +158,14 @@ func (c *config) loadTemplate() (err error) {
 	}
 
 	return err
+}
+
+func loadFromEnv(s string) string {
+	const envPrefix = `ENV:`
+	if strings.Index(s, envPrefix) != 0 {
+		return s
+	}
+	return os.Getenv(s[len(envPrefix):])
 }
 
 func splitEmailAddresses(s string) ([]string, error) {
