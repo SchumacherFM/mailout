@@ -22,11 +22,9 @@ mailout endpoint {
 }
 ```
 
-- publickey: if provided mails get encrypted. Set a path to a file, an environment variable or an URL to a
-key on a HTTPS site.
-- maillog: Specify a directory, which gets created recursively, and emails plus errors gets logged. Leaving
-the maillog setting empty does not log anything.
-- port: SSL/TLS works only with port 465+587 at the moment 
+- publickey: if provided mails get encrypted. Set a path to a file, an environment variable or an URL to a key on a HTTPS site.
+- maillog: Specify a directory, which gets created recursively, and emails plus errors gets logged. Leaving the maillog setting empty does not log anything.
+- port: Plain text on port 25, SSL use port 465, for TLS use port 587. Internally for TLS the host name gets verified with the certificate.
 
 ### Email template
 

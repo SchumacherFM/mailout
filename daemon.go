@@ -1,6 +1,7 @@
 package mailout
 
 import (
+	"crypto/tls"
 	"net/http"
 	"time"
 
@@ -12,7 +13,11 @@ func startMailDaemon(mc *config) chan<- *http.Request {
 
 	go func() {
 		d := gomail.NewPlainDialer(mc.host, mc.port, mc.username, mc.password)
-		d.SSL = mc.port == 465 || mc.port == 587
+		if mc.port == 587 {
+			d.TLSConfig = &tls.Config{
+				ServerName: mc.host,
+			}
+		}
 
 		var s gomail.SendCloser
 		var err error
