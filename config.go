@@ -49,6 +49,9 @@ type config struct {
 	bcc []string
 	//subject         Email from {{.firstname}} {{.lastname}}
 	subject string
+
+	subjectTpl *ttpl.Template
+
 	//body            path/to/tpl.[txt|html]
 	body       string
 	bodyIsHTML bool
@@ -157,7 +160,8 @@ func (c *config) loadTemplate() (err error) {
 		return fmt.Errorf("Incorrect file extension. Neither .txt nor .html: %q", c.body)
 	}
 
-	return err
+	c.subjectTpl, err = ttpl.New("").Parse(c.subject)
+	return
 }
 
 func loadFromEnv(s string) string {

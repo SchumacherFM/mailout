@@ -375,7 +375,7 @@
           <tr>
             <td>
 
-              <h3>Thank you for contacting us, Elijah Baily</h3>
+              <h3>Thank you for contacting us, {{ .Form.Get "firstname" }} {{ .Form.Get "lastname" }}</h3>
               <p class="lead">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt
                 ut labore et.</p>
 
@@ -388,7 +388,7 @@
                 it Now! &raquo;</a>
               </p><!-- /Callout Panel -->
 
-              <h3>Title Ipsum
+              <h3>Sir {{ .Form.Get "name" }}
                 <small>This is a note.</small>
               </h3>
               <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et

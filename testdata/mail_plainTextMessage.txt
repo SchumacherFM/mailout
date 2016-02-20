@@ -1,0 +1,7 @@
+Demo Contact Form:
+
+FirstName {{ .Form.Get "firstname" }}
+LastName {{ .Form.Get "lastname" }}
+Email {{ .Form.Get "email" }}
+
+This shows the content of a text template.

@@ -24,7 +24,7 @@ func TestSetupParse(t *testing.T) {
 		},
 		{
 			`mailout {
-				public_key testdata/B06469EE_nopw.pub.asc
+				publickey testdata/B06469EE_nopw.pub.asc
 			}`,
 			nil,
 			func() *config {
@@ -44,7 +44,7 @@ func TestSetupParse(t *testing.T) {
 		},
 		{
 			`mailout /kungfu {
-				public_key testdata/B06469EE_nopw.pub.asc
+				publickey testdata/B06469EE_nopw.pub.asc
 			}`,
 			nil,
 			func() *config {
@@ -56,8 +56,7 @@ func TestSetupParse(t *testing.T) {
 		},
 		{
 			`mailout {
-				public_key testdata/B06469EE_nopw.pub.asc
-				success_uri     email_sent_confirmation.html
+				publickey testdata/B06469EE_nopw.pub.asc
 				to              recipient_to@domain.email
 				cc              "recipient_cc1@domain.email, recipient_cc2@domain.email"
 				bcc             "recipient_bcc1@domain.email, recipient_bcc2@domain.email"

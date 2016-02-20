@@ -6,7 +6,7 @@ Caddy config options:
 
 ```
 mailout endpoint {
-	public_key      [path/to/pgp.pub|ENV:MY_PGP_KEY_PATH|https://keybase.io/cyrill/key.asc]
+	publickey      [path/to/pgp.pub|ENV:MY_PGP_KEY_PATH|https://keybase.io/cyrill/key.asc]
 	maillog         [path/to/logdir|or empty]
 		
 	to              recipient_to@domain.email       
@@ -22,7 +22,7 @@ mailout endpoint {
 }
 ```
 
-- public_key: if provided mails get encrypted. Set a path to a file, an environment variable or an URL to a
+- publickey: if provided mails get encrypted. Set a path to a file, an environment variable or an URL to a
 key on a HTTPS site.
 - maillog: Specify a directory, which gets created recursively, and emails plus errors gets logged. Leaving
 the maillog setting empty does not log anything.

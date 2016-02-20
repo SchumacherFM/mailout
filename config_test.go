@@ -62,7 +62,7 @@ func TestConfigLoadPGPKeyHTTPS(t *testing.T) {
 	}{
 		{
 			`mailout {
-				public_key https://keybase.io/cyrill/keyNOTFOUND.asc
+				publickey https://keybase.io/cyrill/keyNOTFOUND.asc
 			}`,
 			errors.New("Loading remote public key failed from URL \"https://keybase.io/cyrill/keyNOTFOUND.asc\". StatusCode have 404 StatusCode want 200"),
 			true,
@@ -70,7 +70,7 @@ func TestConfigLoadPGPKeyHTTPS(t *testing.T) {
 		},
 		{
 			`mailout {
-				public_key https://keybase.io/cyrill/B06469EE_nopw.pub.asc
+				publickey https://keybase.io/cyrill/B06469EE_nopw.pub.asc
 			}`,
 			errors.New("Cannot read public key \"https://keybase.io/cyrill/B06469EE_nopw.pub.asc\": openpgp: invalid argument: no armored data found"),
 			true,
@@ -78,7 +78,7 @@ func TestConfigLoadPGPKeyHTTPS(t *testing.T) {
 		},
 		{
 			`mailout {
-				public_key https://keybase.io/cyrill/B06469EE_nopw.pub.asc
+				publickey https://keybase.io/cyrill/B06469EE_nopw.pub.asc
 			}`,
 			nil,
 			false,
@@ -132,21 +132,21 @@ func TestConfigLoadPGPKeyHDD(t *testing.T) {
 		},
 		{
 			`mailout {
-				public_key testdata/B06469EE_nopw.pub.asc
+				publickey testdata/B06469EE_nopw.pub.asc
 			}`,
 			nil,
 			false,
 		},
 		{
 			`mailout {
-				public_key testdata/B06469EE_nopw.priv.asc
+				publickey testdata/B06469EE_nopw.priv.asc
 			}`,
 			errors.New("PrivateKey found. Not allowed. Please remove it from file: \"testdata/B06469EE_nopw.priv.asc\""),
 			true,
 		},
 		{
 			`mailout {
-				public_key http://keybase.io/cyrill/key.asc
+				publickey http://keybase.io/cyrill/key.asc
 			}`,
 			errors.New("File \"http://keybase.io/cyrill/key.asc\" not found"),
 			true,
@@ -237,7 +237,7 @@ func TestLoadFromEnv(t *testing.T) {
 	t.Parallel()
 
 	const testCaddyConfig = `mailout {
-	public_key 		ENV:CADDY_MAILOUT_KEY
+	publickey 		ENV:CADDY_MAILOUT_KEY
 	username		ENV:CADDY_MAILOUT_USER
 	password		ENV:CADDY_MAILOUT_PW
 	host            ENV:CADDY_MAILOUT_HOST

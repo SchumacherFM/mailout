@@ -78,7 +78,7 @@ func parse(c *setup.Controller) (mc *config, err error) {
 		for c.NextBlock() {
 			var err error
 			switch c.Val() {
-			case "public_key":
+			case "publickey":
 				if !c.NextArg() {
 					return nil, c.ArgErr()
 				}

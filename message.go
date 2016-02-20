@@ -25,6 +25,7 @@ type message struct {
 	gm *gomail.Message
 }
 
+// newMessage uses also a request which must have an already parsed form.
 func newMessage(mc *config, r *http.Request) message {
 	return message{
 		mc: mc,
@@ -51,10 +52,22 @@ func (bm message) header() {
 	if len(bm.mc.bcc) > 0 {
 		bm.gm.SetHeader("Bcc", bm.mc.bcc...)
 	}
-	bm.gm.SetHeader("Subject", bm.mc.subject)
+
+	subjBuf := bufpool.Get()
+	defer bufpool.Put(subjBuf)
+
+	err := bm.mc.subjectTpl.Execute(subjBuf, struct {
+		Form url.Values
+	}{
+		Form: bm.r.PostForm,
+	})
+	if err != nil {
+		bm.mc.maillog.Errorf("Render Subject Error: %s\nForm: %#v\nWritten: %s", err, bm.r.PostForm, subjBuf)
+	}
+
+	bm.gm.SetHeader("Subject", subjBuf.String())
 
 	bm.gm.SetAddressHeader("From", bm.r.PostFormValue("email"), bm.r.PostFormValue("name"))
-
 }
 
 func (bm message) bodyEncrypted() {
@@ -69,15 +82,18 @@ func (bm message) bodyEncrypted() {
 
 	w, err := openpgp.Encrypt(pgpBuf, openpgp.EntityList{0: bm.mc.keyEntity}, nil, nil, nil)
 	if err != nil {
-		panic(err) // todo remove
+		bm.mc.maillog.Errorf("PGP encrypt Error: %s", err)
+		return
 	}
 	_, err = w.Write(msgBuf.Bytes())
 	if err != nil {
-		panic(err) // todo remove
+		bm.mc.maillog.Errorf("PGP encrypt Write Error: %s", err)
+		return
 	}
 	err = w.Close()
 	if err != nil {
-		panic(err) // todo remove
+		bm.mc.maillog.Errorf("PGP encrypt Close Error: %s", err)
+		return
 	}
 
 	b64Buf := make([]byte, base64.StdEncoding.EncodedLen(pgpBuf.Len()))

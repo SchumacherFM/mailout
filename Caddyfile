@@ -24,7 +24,7 @@ iair.dev, zerobin.dev {
     tls off
 
     mailout /hiddenSendMail {
-        public_key      "testdata/B06469EE_nopw.pub.asc"
+        publickey      "testdata/B06469EE_nopw.pub.asc"
         logdir          testdata/
 
         to              "recipient_to@domain.email"
