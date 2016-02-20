@@ -136,3 +136,51 @@ func TestMessagePlainPGP(t *testing.T) {
 
 	//t.Log(buf.String())
 }
+
+// 0.4.ms per PGP message
+// BenchmarkMessagePlainPGP-4	    3000	    405413 ns/op	   37530 B/op	     176 allocs/op
+func BenchmarkMessagePlainPGP(b *testing.B) {
+	const caddyFile = `mailout {
+				to              pgp@domain.email
+				cc              "pgp1@domain.email"
+				subject         "Encrypted contact 🔑"
+				body            testdata/mail_plainTextMessage.txt
+				publickey 		testdata/B06469EE_nopw.pub.asc
+			}`
+
+	c := setup.NewTestController(caddyFile)
+	mc, err := parse(c)
+	if err != nil {
+		b.Fatal(err)
+	}
+	if err := mc.loadTemplate(); err != nil {
+		b.Fatal(err)
+	}
+	if err := mc.loadPGPKey(); err != nil {
+		b.Fatal(err)
+	}
+
+	data := make(url.Values)
+	data.Set("firstname", "Ken")
+	data.Set("lastname", "Thompson")
+	data.Set("email", "ken@thompson.email")
+	data.Set("name", "Ken Thompson")
+
+	req,err := http.NewRequest("POST","/mailout", nil)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	req.PostForm = data
+
+	buf := new(bytes.Buffer)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		msg := newMessage(mc, req).build()
+		if _, err := msg.WriteTo(buf); err != nil {
+			b.Fatal(err)
+		}
+		buf.Reset()
+	}
+}
