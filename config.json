@@ -1,3 +1,5 @@
 {
-	"directive" : "mailout"
+  "directive": "mailout",
+  "after": "gzip",
+  "watch": false
 }

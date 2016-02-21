@@ -44,12 +44,14 @@ type JSONError struct {
 func writeJSON(je JSONError, w http.ResponseWriter) (int, error) {
 	buf := bufpool.Get()
 	defer bufpool.Put(buf)
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
 	if err := json.NewEncoder(buf).Encode(je); err != nil {
 		return http.StatusInternalServerError, err
 	}
 	if _, err := w.Write(buf.Bytes()); err != nil {
 		return http.StatusInternalServerError, err
 	}
-	w.Header().Set("Content-Type", "application/json; charset=utf-8") // does not work :-(
 	return http.StatusOK, nil
 }

@@ -10,7 +10,8 @@ import (
 
 func startMailDaemon(mc *config) chan<- *http.Request {
 	rChan := make(chan *http.Request)
-
+	// this can be a bottleneck under high load because the channel is unbuffered.
+	// maybe we can add a pool of sendmail workers.
 	go func() {
 		d := gomail.NewPlainDialer(mc.host, mc.port, mc.username, mc.password)
 		if mc.port == 587 {

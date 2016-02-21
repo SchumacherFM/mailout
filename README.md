@@ -149,7 +149,8 @@ I need some help to pimp the authentication feature of [gomail](https://github.c
 # Todo
 
 - file uploads
-- implement ideas and improvements in open issues
+- rate limiting
+- implement ideas and improvements from open issues
 
 # Contribute
 
