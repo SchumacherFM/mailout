@@ -11,6 +11,8 @@ import (
 	"github.com/mholt/caddy/middleware"
 )
 
+const StatusUnprocessableEntity = 422
+
 type handler struct {
 	reqPipe chan<- *http.Request
 	config  *config
@@ -18,30 +20,42 @@ type handler struct {
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error) {
-	if r.URL.Path != h.config.endpoint || r.Method != "POST" {
+	if r.URL.Path != h.config.endpoint {
 		return h.Next.ServeHTTP(w, r)
+	}
+	if r.Method != "POST" {
+		return http.StatusMethodNotAllowed, nil
+	}
+
+	// TODO: juju/ratelimit e.g. 1000 mails per day or within 24h
+	if false {
+		//Add headers:
+		//X-Rate-Limit-Limit - The number of allowed requests in the current period
+		//X-Rate-Limit-Remaining - The number of remaining requests in the current period
+		//X-Rate-Limit-Reset - The number of seconds left in the current period
+		return http.StatusTooManyRequests, nil
 	}
 
 	if err := r.ParseForm(); err != nil {
-		return http.StatusInternalServerError, err
+		return http.StatusBadRequest, err
 	}
 
 	if e := r.PostFormValue("email"); false == isValidEmail(e) {
 		return writeJSON(JSONError{
 			Error: fmt.Sprintf("Invalid email address: %q", e),
-		}, w)
+		}, StatusUnprocessableEntity, w)
 	}
 
 	h.reqPipe <- r
 
-	return writeJSON(JSONError{}, w)
+	return writeJSON(JSONError{}, http.StatusOK, w)
 }
 
 type JSONError struct {
 	Error string `json:"error,omitempty"`
 }
 
-func writeJSON(je JSONError, w http.ResponseWriter) (int, error) {
+func writeJSON(je JSONError, code int, w http.ResponseWriter) (int, error) {
 	buf := bufpool.Get()
 	defer bufpool.Put(buf)
 
@@ -53,5 +67,5 @@ func writeJSON(je JSONError, w http.ResponseWriter) (int, error) {
 	if _, err := w.Write(buf.Bytes()); err != nil {
 		return http.StatusInternalServerError, err
 	}
-	return http.StatusOK, nil
+	return code, nil
 }

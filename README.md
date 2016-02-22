@@ -40,7 +40,47 @@ If you don't like this file name you can overwrite it with the key `publickeyAtt
 To implement a fully working *This is an OpenPGP/MIME encrypted message (RFC 4880 and 3156)* PGP attachment, 
 I need some help. It's possible that the gomail package needs to be refactored.
 
-### HTML form, JSON and email template
+### JSON API
+
+Server response on success (Status 200 OK):
+
+```
+{}
+```
+
+Server response on error (Status 422 Unprocessable Entity):
+
+```
+{"error":"Invalid email address: \"doe.john_AT_nonexistantServer.email\""}
+```
+
+Server response on non-POST requests (Status 405 Method Not Allowed, non-JSON response):
+
+```
+Method not allowed
+```
+
+Server response on form parse error (Status 400 Bad Request, non-JSON response):
+
+```
+Bad request
+```
+
+TODO: Server response on reaching the rate limit (Status 429 Too Many Requests, non-JSON response):
+
+```
+Too many requests
+```
+
+Rate limit will be e.g. more than 1000 emails per 24h. All requests will contain the headers:
+
+- X-Rate-Limit-Limit - The number of allowed requests in the current period
+- X-Rate-Limit-Remaining - The number of remaining requests in the current period
+- X-Rate-Limit-Reset - The number of seconds left in the current period
+
+
+
+### HTML form and email template
 
 The rendering engine for the email templates depends on the suffix of the template file name. 
 
@@ -77,20 +117,6 @@ The following snipped has been extracted from a [Hugo](http://gohugo.io) templat
     </div>
   </form>
 ```
-
-Server response on success (Status 200):
-
-```
-{}
-```
-
-Server response on error (Status 200):
-
-```
-{"error":"Invalid email address: \"doe.john_AT_nonexistantServer.email\""}
-```
-
-Non 200 Statuses are returned as non-json strings.
 
 A jQuery AJAX handler might look like (untested):
 
