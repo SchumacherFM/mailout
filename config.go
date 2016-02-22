@@ -43,7 +43,7 @@ type config struct {
 	keyAttachmentName string
 
 	// maillog writes each email into one file in a directory. If nil, writes to /dev/null
-	maillog *maillog.Logger
+	maillog maillog.Logger
 
 	//to              recipient_to@domain.email
 	to []string

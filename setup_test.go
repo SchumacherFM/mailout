@@ -15,14 +15,14 @@ func TestSetupParse(t *testing.T) {
 		expectErr  error
 		expectConf func() *config
 	}{
-		{
+		0: {
 			`mailout`,
 			nil,
 			func() *config {
 				return newConfig()
 			},
 		},
-		{
+		1: {
 			`mailout {
 				publickey testdata/B06469EE_nopw.pub.asc
 			}`,
@@ -33,7 +33,7 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		{
+		2: {
 			`mailout /karate`,
 			nil,
 			func() *config {
@@ -42,7 +42,7 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		{
+		3: {
 			`mailout /kungfu {
 				publickey testdata/B06469EE_nopw.pub.asc
 			}`,
@@ -54,7 +54,7 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		{
+		4: {
 			`mailout {
 				publickey testdata/B06469EE_nopw.pub.asc
 				to              recipient_to@domain.email
@@ -79,7 +79,7 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		{
+		5: {
 			`mailout /sendmail {
 				username 	g0ph3r
 				password 	release1.6
@@ -97,14 +97,14 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		{
+		6: {
 			`mailout /sendmail {
 				to	"reci@email.de,"
 			}`,
 			errors.New("Incorrect Email address found in: \"reci@email.de,\""),
 			func() *config {
 				c := newConfig()
-				c.endpoint = "/sendmail"
+				c.endpoint = defaultEndpoint
 				c.username = "g0ph3r"
 				c.password = "release1.6"
 				c.host = "127.0.0.2"
@@ -112,7 +112,7 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		{
+		7: {
 			`mailout /sendmail {
 				to
 				cc
@@ -121,11 +121,81 @@ func TestSetupParse(t *testing.T) {
 			errors.New("Testfile:2 - Parse error: Wrong argument count or unexpected line ending after 'to'"),
 			func() *config {
 				c := newConfig()
-				c.endpoint = "/sendmail"
+				c.endpoint = defaultEndpoint
 				c.username = "g0ph3r"
 				c.password = "release1.6"
 				c.host = "127.0.0.2"
 				c.portRaw = "25"
+				return c
+			},
+		},
+		8: {
+			`mailout {
+				maillog testdata
+				errorlog testdata
+			}`,
+			nil,
+			func() *config {
+				c := newConfig()
+				c.maillog.MailDir = "testdata"
+				c.maillog.ErrDir = "testdata"
+				return c
+			},
+		},
+		9: {
+			`mailout {
+				maillog testdata
+			}`,
+			nil,
+			func() *config {
+				c := newConfig()
+				c.maillog.MailDir = "testdata"
+				return c
+			},
+		},
+		10: {
+			`mailout {
+				errorlog testdata
+			}`,
+			nil,
+			func() *config {
+				c := newConfig()
+				c.maillog.ErrDir = "testdata"
+				return c
+			},
+		},
+		11: {
+			`mailout {
+				errorlog testdata
+				maillog testdata
+			}`,
+			nil,
+			func() *config {
+				c := newConfig()
+				c.maillog.MailDir = "testdata"
+				c.maillog.ErrDir = "testdata"
+				return c
+			},
+		},
+		12: {
+			`mailout {
+				publickeyAttachmentFileName "encrypted.asc"
+			}`,
+			nil,
+			func() *config {
+				c := newConfig()
+				c.keyAttachmentName = "encrypted.asc"
+				return c
+			},
+		},
+		13: {
+			`mailout {
+				publickeyAttachmentFileName
+			}`,
+			errors.New("Testfile:2 - Parse error: Wrong argument count or unexpected line ending after 'publickeyAttachmentFileName'"),
+			func() *config {
+				c := newConfig()
+				c.keyAttachmentName = "encrypted.asc"
 				return c
 			},
 		},

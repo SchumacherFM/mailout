@@ -87,11 +87,24 @@ func parse(c *setup.Controller) (mc *config, err error) {
 					return nil, c.ArgErr()
 				}
 				mc.keyAttachmentName = c.Val()
-			case "logdir":
+			case "maillog":
 				if !c.NextArg() {
 					return nil, c.ArgErr()
 				}
-				mc.maillog = maillog.New(c.Val())
+				if mc.maillog.IsNil() {
+					mc.maillog = maillog.New(c.Val(), "")
+				} else {
+					mc.maillog.MailDir = c.Val()
+				}
+			case "errorlog":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				if mc.maillog.IsNil() {
+					mc.maillog = maillog.New("", c.Val())
+				} else {
+					mc.maillog.ErrDir = c.Val()
+				}
 			case "to":
 				if !c.NextArg() {
 					return nil, c.ArgErr()

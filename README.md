@@ -6,8 +6,9 @@ Caddy config options:
 
 ```
 mailout [endpoint] {
-	publickey      [path/to/pgp.pub|ENV:MY_PGP_KEY_PATH|https://keybase.io/cyrill/key.asc]
+	publickey       [path/to/pgp.pub|ENV:MY_PGP_KEY_PATH|https://keybase.io/cyrill/key.asc]
 	maillog         [path/to/logdir|or empty]
+	errorlog        [path/to/logdir|or empty]
 		
 	to              recipient_to@domain.email       
 	cc              "recipient_cc1@domain.email, recipient_cc2@domain.email"        
@@ -24,7 +25,8 @@ mailout [endpoint] {
 
 - endpoint: Can be any path but your POST request must match it. Default path: `/mailout`
 - publickey: if provided mails get encrypted. Set a path to a file, an environment variable or an URL to a key on a HTTPS site.
-- maillog: Specify a directory, which gets created recursively, and emails plus errors gets logged in there. Leaving the maillog setting empty does not log anything. Every sent email is saved into its own file. Strict file permissions apply. 
+- maillog: Specify a directory, which gets created recursively, and emails will be written in here, as a backup. Leaving the maillog setting empty does not log anything. Every sent email is saved into its own file. Strict file permissions apply. 
+- errorlog: Specify a directory, which gets created recursively, and errors gets logged in there. Leaving the errorlog setting empty does not log anything. Strict file permissions apply. 
 - to, cc, bcc: Multiple email addresses must be separated by a colon and within double quotes.
 - subject: Has the same functionality as the body template.
 - body: Text or HTML template stored on the hard disk of your server. More details below.
