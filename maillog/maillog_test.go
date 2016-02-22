@@ -13,7 +13,7 @@ import (
 
 func TestNewEmpty(t *testing.T) {
 	t.Parallel()
-	l, err := maillog.New("").Init()
+	l, err := maillog.New("", "").Init()
 	assert.Nil(t, l)
 	assert.Nil(t, err)
 	l.Errorf("hello %d", 4711)
@@ -26,7 +26,7 @@ func TestNewEmpty(t *testing.T) {
 func TestNewFail(t *testing.T) {
 	t.Parallel()
 	testDir := path.Join(string(os.PathSeparator), "testdata") // try to create dir in root
-	l, err := maillog.New(testDir).Init()
+	l, err := maillog.New(testDir, testDir).Init()
 	assert.Nil(t, l)
 	assert.EqualError(t, err, "Cannot create directory \"/testdata\" because of: mkdir /testdata: permission denied")
 }
@@ -40,7 +40,7 @@ func TestNewErrorfValid(t *testing.T) {
 			t.Fatal(err)
 		}
 	}()
-	l, err := maillog.New(testDir).Init()
+	l, err := maillog.New("", testDir).Init()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestNewErrorfValid(t *testing.T) {
 	assert.Contains(t, string(logContent), testData)
 }
 
-func TestNewWriteValid(t *testing.T) {
+func TestNewMailWriteValid(t *testing.T) {
 	t.Parallel()
 
 	testDir := path.Join(".", "testdata", time.Now().String())
@@ -64,7 +64,7 @@ func TestNewWriteValid(t *testing.T) {
 			t.Fatal(err)
 		}
 	}()
-	l, err := maillog.New(testDir).Init()
+	l, err := maillog.New(testDir, "").Init()
 	if err != nil {
 		t.Fatal(err)
 	}

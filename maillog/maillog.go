@@ -12,20 +12,25 @@ import (
 
 // Logger logs emails and errors. If nil, nothing gets logged.
 type Logger struct {
-	path    string
-	errlog  *log.Logger
+	// MailDir writes mails into this directory
+	MailDir string
+	// ErrDir writes error log file into this directory
+	ErrDir string
+	errlog *log.Logger
+	// ErrFile full file path to the error log file
 	ErrFile string
 	hosts   []string
 }
 
 // New creates a new logger by a given directory. If the directory does not exists
 // it will be created recursively. Empty directory means a valid nil logger.
-func New(directory string) *Logger {
-	if directory == "" {
+func New(mailDir, errDir string) *Logger {
+	if mailDir == "" && errDir == "" {
 		return nil
 	}
 	return &Logger{
-		path: directory,
+		MailDir: mailDir,
+		ErrDir:  errDir,
 	}
 }
 
@@ -35,32 +40,35 @@ func (l *Logger) Init(hosts ...string) (*Logger, error) {
 		return nil, nil
 	}
 	l.hosts = hosts
-	if false == isDir(l.path) {
-		if err := os.MkdirAll(l.path, 0700); err != nil {
-			return nil, fmt.Errorf("Cannot create directory %q because of: %s", l.path, err)
+	for _, dir := range [...]string{l.MailDir, l.ErrDir} {
+		if dir == "" {
+			continue
+		}
+		if false == isDir(dir) {
+			if err := os.MkdirAll(dir, 0700); err != nil {
+				return nil, fmt.Errorf("Cannot create directory %q because of: %s", dir, err)
+			}
 		}
 	}
 
-	l.ErrFile = path.Join(l.path, fmt.Sprintf("errors_%s_%d.log", strings.Join(hosts, "_"), time.Now().Unix()))
-
-	f, err := os.OpenFile(l.ErrFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-	if err != nil {
-		return nil, err
+	if l.ErrDir == "" {
+		return l,nil
 	}
 
+	l.ErrFile = path.Join(l.ErrDir, fmt.Sprintf("errors_%s_%d.log", strings.Join(hosts, "_"), time.Now().Unix()))
+	f, err := os.OpenFile(l.ErrFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	l.errlog = log.New(f, "", log.LstdFlags)
-
-	return l, nil
+	return l, err
 }
 
 // NewWriter creates a new file with a file name consisting of a time stamp.
 // If it fails to create a file it returns a nilWriteCloser and does not log
 // anymore any data.
 func (l *Logger) NewWriter() io.WriteCloser {
-	if l == nil {
+	if l == nil || l.MailDir == "" {
 		return nilWriteCloser{}
 	}
-	fName := fmt.Sprintf("%s%smail_%s_%d.txt", l.path, string(os.PathSeparator), strings.Join(l.hosts, "_"), time.Now().UnixNano())
+	fName := fmt.Sprintf("%s%smail_%s_%d.txt", l.MailDir, string(os.PathSeparator), strings.Join(l.hosts, "_"), time.Now().UnixNano())
 	f, err := os.OpenFile(fName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		l.Errorf("failed to create %q with error: %s", fName, err)
@@ -72,7 +80,7 @@ func (l *Logger) NewWriter() io.WriteCloser {
 // Errorf writes into the error log file. If the logger is nil
 // no write will happen.
 func (l *Logger) Errorf(format string, v ...interface{}) {
-	if l == nil {
+	if l == nil || l.errlog == nil {
 		return
 	}
 	l.errlog.Printf(format, v...)
