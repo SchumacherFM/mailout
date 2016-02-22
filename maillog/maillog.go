@@ -24,20 +24,25 @@ type Logger struct {
 
 // New creates a new logger by a given directory. If the directory does not exists
 // it will be created recursively. Empty directory means a valid nil logger.
-func New(mailDir, errDir string) *Logger {
+func New(mailDir, errDir string) Logger {
 	if mailDir == "" && errDir == "" {
-		return nil
+		return Logger{}
 	}
-	return &Logger{
+	return Logger{
 		MailDir: mailDir,
 		ErrDir:  errDir,
 	}
 }
 
+// IsNil returns true if the Logger is empty which means no path are set.
+func (l Logger) IsNil() bool {
+	return l.MailDir == "" && l.ErrDir == ""
+}
+
 // Init creates directories and the error log file
-func (l *Logger) Init(hosts ...string) (*Logger, error) {
-	if l == nil {
-		return nil, nil
+func (l Logger) Init(hosts ...string) (Logger, error) {
+	if l.IsNil() {
+		return Logger{}, nil
 	}
 	l.hosts = hosts
 	for _, dir := range [...]string{l.MailDir, l.ErrDir} {
@@ -46,13 +51,13 @@ func (l *Logger) Init(hosts ...string) (*Logger, error) {
 		}
 		if false == isDir(dir) {
 			if err := os.MkdirAll(dir, 0700); err != nil {
-				return nil, fmt.Errorf("Cannot create directory %q because of: %s", dir, err)
+				return Logger{}, fmt.Errorf("Cannot create directory %q because of: %s", dir, err)
 			}
 		}
 	}
 
 	if l.ErrDir == "" {
-		return l,nil
+		return l, nil
 	}
 
 	l.ErrFile = path.Join(l.ErrDir, fmt.Sprintf("errors_%s_%d.log", strings.Join(hosts, "_"), time.Now().Unix()))
@@ -64,8 +69,8 @@ func (l *Logger) Init(hosts ...string) (*Logger, error) {
 // NewWriter creates a new file with a file name consisting of a time stamp.
 // If it fails to create a file it returns a nilWriteCloser and does not log
 // anymore any data.
-func (l *Logger) NewWriter() io.WriteCloser {
-	if l == nil || l.MailDir == "" {
+func (l Logger) NewWriter() io.WriteCloser {
+	if l.MailDir == "" {
 		return nilWriteCloser{}
 	}
 	fName := fmt.Sprintf("%s%smail_%s_%d.txt", l.MailDir, string(os.PathSeparator), strings.Join(l.hosts, "_"), time.Now().UnixNano())
@@ -79,8 +84,8 @@ func (l *Logger) NewWriter() io.WriteCloser {
 
 // Errorf writes into the error log file. If the logger is nil
 // no write will happen.
-func (l *Logger) Errorf(format string, v ...interface{}) {
-	if l == nil || l.errlog == nil {
+func (l Logger) Errorf(format string, v ...interface{}) {
+	if l.errlog == nil || l.ErrDir == "" {
 		return
 	}
 	l.errlog.Printf(format, v...)
