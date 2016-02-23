@@ -12,14 +12,18 @@ import (
 
 // Logger logs emails and errors. If nil, nothing gets logged.
 type Logger struct {
+	hosts []string
+
 	// MailDir writes mails into this directory
 	MailDir string
+
 	// ErrDir writes error log file into this directory
 	ErrDir string
 	errlog *log.Logger
 	// ErrFile full file path to the error log file
 	ErrFile string
-	hosts   []string
+	// errfile used for syncing to disk after logging a message
+	errFile io.Writer
 }
 
 // New creates a new logger by a given directory. If the directory does not exists
@@ -60,9 +64,13 @@ func (l Logger) Init(hosts ...string) (Logger, error) {
 		return l, nil
 	}
 
-	l.ErrFile = path.Join(l.ErrDir, fmt.Sprintf("errors_%s_%d.log", strings.Join(hosts, "_"), time.Now().Unix()))
-	f, err := os.OpenFile(l.ErrFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-	l.errlog = log.New(f, "", log.LstdFlags)
+	var err error
+	l.ErrFile = path.Join(l.ErrDir, fmt.Sprintf("mail_errors_%s.log", strings.Join(hosts, "_")))
+	l.errFile, err = os.OpenFile(l.ErrFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
+	if l.errFile == nil {
+		l.errFile = os.Stderr
+	}
+	l.errlog = log.New(l.errFile, "", log.LstdFlags)
 	return l, err
 }
 
@@ -83,12 +91,18 @@ func (l Logger) NewWriter() io.WriteCloser {
 }
 
 // Errorf writes into the error log file. If the logger is nil
-// no write will happen.
+// no writes will happen.
 func (l Logger) Errorf(format string, v ...interface{}) {
 	if l.errlog == nil || l.ErrDir == "" {
 		return
 	}
 	l.errlog.Printf(format, v...)
+	if f, ok := l.errFile.(*os.File); ok && f != nil {
+		if err := f.Sync(); err != nil && err != os.ErrInvalid {
+			// so what now?
+			println("ErrFile", l.ErrFile, " sync to disk error:", err.Error())
+		}
+	}
 }
 
 func isDir(path string) bool {
