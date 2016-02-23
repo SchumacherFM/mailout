@@ -20,7 +20,7 @@ func TestNewEmpty(t *testing.T) {
 	wc := l.NewWriter()
 	n, err := wc.Write([]byte("H3ll0"))
 	assert.NoError(t, err)
-	assert.Empty(t, n)
+	assert.Exactly(t, 5, n)
 }
 
 func TestNewFail(t *testing.T) {
