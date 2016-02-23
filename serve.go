@@ -59,6 +59,7 @@ func writeJSON(je JSONError, code int, w http.ResponseWriter) (int, error) {
 	buf := bufpool.Get()
 	defer bufpool.Put(buf)
 
+	w.WriteHeader(code) // caddy always prints out non 200 codes and that breaks this API.
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
 	if err := json.NewEncoder(buf).Encode(je); err != nil {
@@ -67,5 +68,5 @@ func writeJSON(je JSONError, code int, w http.ResponseWriter) (int, error) {
 	if _, err := w.Write(buf.Bytes()); err != nil {
 		return http.StatusInternalServerError, err
 	}
-	return code, nil
+	return http.StatusOK, nil // so caddy always gets a 200 from us
 }
