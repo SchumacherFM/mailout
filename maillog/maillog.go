@@ -34,7 +34,7 @@ func New(mailDir, errDir string) Logger {
 	}
 }
 
-// IsNil returns true if the Logger is empty which means no path are set.
+// IsNil returns true if the Logger is empty which means no paths are set.
 func (l Logger) IsNil() bool {
 	return l.MailDir == "" && l.ErrDir == ""
 }
@@ -68,7 +68,7 @@ func (l Logger) Init(hosts ...string) (Logger, error) {
 
 // NewWriter creates a new file with a file name consisting of a time stamp.
 // If it fails to create a file it returns a nilWriteCloser and does not log
-// anymore any data.
+// anymore any data. Guaranteed to not return nil.
 func (l Logger) NewWriter() io.WriteCloser {
 	if l.MailDir == "" {
 		return nilWriteCloser{}
@@ -96,6 +96,8 @@ func isDir(path string) bool {
 	return fileInfo != nil && fileInfo.IsDir() && err == nil
 }
 
+// nilWriteCloser used as a backup to not return a nil interface in function
+// NewWriter()
 type nilWriteCloser struct {
 	io.WriteCloser
 }

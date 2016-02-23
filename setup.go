@@ -17,7 +17,7 @@ func Setup(c *setup.Controller) (mw middleware.Middleware, err error) {
 
 	if c.ServerBlockHostIndex == 0 {
 		// only run when the first hostname has been loaded.
-		if _, err = mc.maillog.Init(c.ServerBlockHosts...); err != nil {
+		if mc.maillog, err = mc.maillog.Init(c.ServerBlockHosts...); err != nil {
 			return
 		}
 		if err = mc.loadFromEnv(); err != nil {
