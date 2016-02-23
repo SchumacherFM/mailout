@@ -100,8 +100,8 @@ type nilWriteCloser struct {
 	io.WriteCloser
 }
 
-func (wc nilWriteCloser) Write(p []byte) (n int, err error) {
-	return
+func (wc nilWriteCloser) Write(p []byte) (int, error) {
+	return len(p), nil
 }
 
 func (wc nilWriteCloser) Close() error {
