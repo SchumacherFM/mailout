@@ -129,7 +129,7 @@ func TestMessagePlainPGP(t *testing.T) {
 
 	testDoPost(t, srv.URL, data)
 
-	assert.Len(t, buf.String(), 2255) // whenever you change the template, change also here
+	assert.Len(t, buf.String(), 2254) // whenever you change the template, change also here
 	assert.Contains(t, buf.String(), "Subject: =?UTF-8?q?Encrypted_contact_=F0=9F=94=91?=")
 	assert.Contains(t, buf.String(), "Cc: pgp1@domain.email")
 

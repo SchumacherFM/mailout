@@ -20,6 +20,9 @@ mailout [endpoint] {
 	password        "[ENV:MY_SMTP_PASSWORD|g0ph3r]"
 	host            "[ENV:MY_SMTP_HOST|smtp.gmail.com]"
 	port            [ENV:MY_SMTP_PORT|25|465|587]
+	
+	ratelimit_interval 24h
+	ratelimit_capacity 1000
 }
 ```
 
@@ -32,6 +35,8 @@ mailout [endpoint] {
 - body: Text or HTML template stored on the hard disk of your server. More details below.
 - username, password, host: Self explanatory.
 - port: Plain text on port 25, SSL use port 465, for TLS use port 587. Internally for TLS the host name gets verified with the certificate.
+- ratelimit_interval: the duration in which the capacity can be consumed. A duration string is a possibly signed sequence of decimal numbers, each with optional fraction and a unit suffix, such as "300ms", "1.5h" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h". Default: 24h  
+- ratelimit_capacity: the overall capacity within the interval. Default: 1000
 
 The default filename for an encrypted message attached to an email is: *encrypted.gpg*. The extension
 `.gpg` has been chosen to allow easy handling with [https://www.gnupg.org/](https://www.gnupg.org/)

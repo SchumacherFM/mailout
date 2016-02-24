@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 
+	"time"
+
 	"github.com/mholt/caddy/caddy/setup"
 	"github.com/stretchr/testify/assert"
 )
@@ -184,7 +186,7 @@ func TestSetupParse(t *testing.T) {
 			nil,
 			func() *config {
 				c := newConfig()
-				c.keyAttachmentName = "encrypted.asc"
+				c.pgpAttachmentName = "encrypted.asc"
 				return c
 			},
 		},
@@ -195,7 +197,66 @@ func TestSetupParse(t *testing.T) {
 			errors.New("Testfile:2 - Parse error: Wrong argument count or unexpected line ending after 'publickeyAttachmentFileName'"),
 			func() *config {
 				c := newConfig()
-				c.keyAttachmentName = "encrypted.asc"
+				c.pgpAttachmentName = "encrypted.asc"
+				return c
+			},
+		},
+		14: {
+			`mailout {
+				ratelimit_interval 12h
+				ratelimit_capacity 500
+			}`,
+			nil,
+			func() *config {
+				c := newConfig()
+				c.rateLimitInterval = time.Hour * 12
+				c.rateLimitCapacity = 500
+				return c
+			},
+		},
+		15: {
+			`mailout {
+				ratelimit_interval
+				ratelimit_capacity 500
+			}`,
+			errors.New("Testfile:2 - Parse error: Wrong argument count or unexpected line ending after 'ratelimit_interval'"),
+			func() *config {
+				c := newConfig()
+				return c
+			},
+		},
+		16: {
+			`mailout {
+				ratelimit_interval 6h
+				ratelimit_capacity
+			}`,
+			errors.New("Testfile:3 - Parse error: Wrong argument count or unexpected line ending after 'ratelimit_capacity'"),
+			func() *config {
+				c := newConfig()
+				return c
+			},
+		},
+		17: {
+			`mailout {
+				ratelimit_interval 12x
+				ratelimit_capacity 500
+			}`,
+			errors.New("time: unknown unit x in duration 12x"),
+			func() *config {
+				c := newConfig()
+				c.rateLimitCapacity = 500
+				return c
+			},
+		},
+		18: {
+			`mailout {
+				ratelimit_interval 12s
+				ratelimit_capacity 5x
+			}`,
+			errors.New("strconv.ParseInt: parsing \"5x\": invalid syntax"),
+			func() *config {
+				c := newConfig()
+				c.rateLimitInterval = time.Second * 12
 				return c
 			},
 		},

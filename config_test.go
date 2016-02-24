@@ -102,19 +102,19 @@ func TestConfigLoadPGPKeyHTTPS(t *testing.T) {
 		srv.Close()
 		if test.keyNil && test.expectErr == nil {
 			assert.NoError(t, err, "Index %d", i)
-			assert.Nil(t, mc.keyEntity, "Index %d", i)
+			assert.Nil(t, mc.publicKeyEntity, "Index %d", i)
 			continue
 		}
 
 		if test.expectErr != nil {
-			assert.Nil(t, mc.keyEntity, "Index %d", i)
+			assert.Nil(t, mc.publicKeyEntity, "Index %d", i)
 			assert.EqualError(t, err, test.expectErr.Error(), "Index %d", i)
 			continue
 		}
 		assert.NoError(t, err, "Index %d", i)
-		assert.NotNil(t, mc.keyEntity, "Index %d", i)
-		assert.NotNil(t, mc.keyEntity.PrimaryKey, "Index %d", i)
-		assert.Nil(t, mc.keyEntity.PrivateKey, "Index %d", i)
+		assert.NotNil(t, mc.publicKeyEntity, "Index %d", i)
+		assert.NotNil(t, mc.publicKeyEntity.PrimaryKey, "Index %d", i)
+		assert.Nil(t, mc.publicKeyEntity.PrivateKey, "Index %d", i)
 	}
 }
 
@@ -163,19 +163,19 @@ func TestConfigLoadPGPKeyHDD(t *testing.T) {
 		err = mc.loadPGPKey()
 		if test.keyNil && test.expectErr == nil {
 			assert.NoError(t, err, "Index %d", i)
-			assert.Nil(t, mc.keyEntity, "Index %d", i)
+			assert.Nil(t, mc.publicKeyEntity, "Index %d", i)
 			continue
 		}
 
 		if test.expectErr != nil {
-			assert.Nil(t, mc.keyEntity, "Index %d", i)
+			assert.Nil(t, mc.publicKeyEntity, "Index %d", i)
 			assert.EqualError(t, err, test.expectErr.Error(), "Index %d", i)
 			continue
 		}
 		assert.NoError(t, err, "Index %d", i)
-		assert.NotNil(t, mc.keyEntity, "Index %d", i)
-		assert.NotNil(t, mc.keyEntity.PrimaryKey, "Index %d", i)
-		assert.Nil(t, mc.keyEntity.PrivateKey, "Index %d", i)
+		assert.NotNil(t, mc.publicKeyEntity, "Index %d", i)
+		assert.NotNil(t, mc.publicKeyEntity.PrimaryKey, "Index %d", i)
+		assert.Nil(t, mc.publicKeyEntity.PrivateKey, "Index %d", i)
 	}
 }
 

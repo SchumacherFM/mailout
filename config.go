@@ -18,9 +18,10 @@ import (
 )
 
 const emailSplitBy = ","
-const emailPublicKeyAttachmentName = "encrypted.gpg"
+
 const defaultEndpoint = "/mailout"
 
+// defaultHttpClient net/http default client does not come with a time out set.
 var defaultHttpClient = &http.Client{
 	Timeout: time.Second * 20,
 }
@@ -36,30 +37,35 @@ type config struct {
 	// publicKey path, ENV or URL [path/to/pgp.pub|https://keybase.io/cyrill/key.asc]
 	// only loads from https
 	publicKey string
-	// primaryKey loaded and parsed publicKey
-	keyEntity  *openpgp.Entity
+	// publicKeyEntity loaded and parsed publicKey
+	publicKeyEntity *openpgp.Entity
+	// pgpAttachmentName name of the email attachment file.
+	pgpAttachmentName string
+
+	// httpClient for now used to download an external public key
 	httpClient *http.Client
-	// keyAttachmentName name of the email attachment file.
-	keyAttachmentName string
 
 	// maillog writes each email into one file in a directory. If nil, writes to /dev/null
+	// also logs errors.
 	maillog maillog.Logger
 
-	//to              recipient_to@domain.email
+	// to              recipient_to@domain.email
 	to []string
-	//cc              recipient_cc1@domain.email, recipient_cc2@domain.email
+	// cc              recipient_cc1@domain.email, recipient_cc2@domain.email
 	cc []string
-	//bcc             recipient_bcc1@domain.email, recipient_bcc2@domain.email
+	// bcc             recipient_bcc1@domain.email, recipient_bcc2@domain.email
 	bcc []string
-	//subject         Email from {{.firstname}} {{.lastname}}
+	// subject         Email from {{.firstname}} {{.lastname}}
 	subject string
 
+	// subjectTpl parsed and loaded subject template
 	subjectTpl *ttpl.Template
 
 	//body            path/to/tpl.[txt|html]
 	body       string
 	bodyIsHTML bool
-	bodyTpl    renderer
+	// bodyTpl parsed and loaded HTML or Text template for the email body.
+	bodyTpl renderer
 
 	//username        [ENV:MY_SMTP_USERNAME|gopher]
 	username string
@@ -70,15 +76,20 @@ type config struct {
 	//port            [ENV:MY_SMTP_PORT|25|587|465]
 	portRaw string
 	port    int
+
+	rateLimitInterval time.Duration
+	rateLimitCapacity int64
 }
 
 func newConfig() *config {
 	return &config{
 		endpoint:          defaultEndpoint,
 		httpClient:        defaultHttpClient,
-		keyAttachmentName: emailPublicKeyAttachmentName,
+		pgpAttachmentName: "encrypted.gpg",
 		host:              "localhost",
 		port:              1025, // mailcatcher (a ruby app) default port
+		rateLimitInterval: time.Hour * 24,
+		rateLimitCapacity: 1000,
 	}
 }
 
@@ -118,10 +129,10 @@ func (c *config) loadPGPKey() error {
 	if err != nil {
 		return fmt.Errorf("Cannot read public key %q: %s", c.publicKey, err)
 	}
-	c.keyEntity = keyList[0]
+	c.publicKeyEntity = keyList[0]
 
-	if c.keyEntity.PrivateKey != nil {
-		c.keyEntity = nil
+	if c.publicKeyEntity.PrivateKey != nil {
+		c.publicKeyEntity = nil
 		return fmt.Errorf("PrivateKey found. Not allowed. Please remove it from file: %q", c.publicKey)
 	}
 

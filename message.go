@@ -37,7 +37,7 @@ func newMessage(mc *config, r *http.Request) message {
 func (bm message) build() *gomail.Message {
 	bm.header()
 	bm.renderSubject()
-	if bm.mc.keyEntity != nil {
+	if bm.mc.publicKeyEntity != nil {
 		bm.bodyEncrypted()
 	} else {
 		bm.bodyUnencrypted()
@@ -85,7 +85,7 @@ func (bm message) bodyEncrypted() {
 
 	bm.renderTemplate(msgBuf)
 
-	w, err := openpgp.Encrypt(pgpBuf, openpgp.EntityList{0: bm.mc.keyEntity}, nil, nil, nil)
+	w, err := openpgp.Encrypt(pgpBuf, openpgp.EntityList{0: bm.mc.publicKeyEntity}, nil, nil, nil)
 	if err != nil {
 		bm.mc.maillog.Errorf("PGP encrypt Error: %s", err)
 		return
@@ -109,7 +109,7 @@ func (bm message) bodyEncrypted() {
 	bm.gm.SetBody("text/plain", "This should be an OpenPGP/MIME encrypted message (RFC 4880 and 3156)")
 
 	bm.gm.Embed(
-		"encrypted.asc",
+		bm.mc.pgpAttachmentName,
 		gomail.SetCopyFunc(func(w io.Writer) error {
 			if _, err := w.Write(pgpStartText); err != nil {
 				return err

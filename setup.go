@@ -2,6 +2,8 @@ package mailout
 
 import (
 	"errors"
+	"strconv"
+	"time"
 
 	"github.com/SchumacherFM/mailout/maillog"
 	"github.com/mholt/caddy/caddy/setup"
@@ -33,12 +35,7 @@ func Setup(c *setup.Controller) (mw middleware.Middleware, err error) {
 			return
 		}
 
-		mailPipe := startMailDaemon(mc)
-
-		c.ServerBlockStorage = &handler{
-			reqPipe: mailPipe,
-			config:  mc,
-		}
+		c.ServerBlockStorage = newHandler(mc, startMailDaemon(mc))
 	}
 
 	c.Shutdown = append(c.Shutdown, func() error {
@@ -86,7 +83,7 @@ func parse(c *setup.Controller) (mc *config, err error) {
 				if !c.NextArg() {
 					return nil, c.ArgErr()
 				}
-				mc.keyAttachmentName = c.Val()
+				mc.pgpAttachmentName = c.Val()
 			case "maillog":
 				if !c.NextArg() {
 					return nil, c.ArgErr()
@@ -159,6 +156,30 @@ func parse(c *setup.Controller) (mc *config, err error) {
 					return nil, c.ArgErr()
 				}
 				mc.portRaw = c.Val()
+			case "ratelimit_interval":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				var rli time.Duration
+				rli, err = time.ParseDuration(c.Val())
+				if err != nil {
+					return nil, err
+				}
+				if rli.Nanoseconds() != 0 {
+					mc.rateLimitInterval = rli
+				}
+			case "ratelimit_capacity":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				var rlc int64
+				rlc, err = strconv.ParseInt(c.Val(), 10, 64)
+				if err != nil {
+					return nil, err
+				}
+				if rlc > 0 || rlc == -1 { // deactivated use minus 1 ... a hack ... ;-)
+					mc.rateLimitCapacity = rlc
+				}
 			}
 		}
 	}
