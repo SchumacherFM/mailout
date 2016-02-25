@@ -16,6 +16,8 @@ turmhof.local, schumacherfm.local {
         # password
         host            127.0.0.1
         port            1025
+
+        ratelimit_capacity 5
     }
 
 }
@@ -38,6 +40,8 @@ iair.dev, zerobin.dev {
         # password
         host            127.0.0.1
         port            1025
+
+        ratelimit_capacity 10
     }
 
 }

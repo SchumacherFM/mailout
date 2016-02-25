@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
 	"strconv"
 	"time"
 
@@ -51,58 +50,61 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 	if r.URL.Path != h.config.endpoint {
 		return h.Next.ServeHTTP(w, r)
 	}
+
+	var nextAvail time.Duration // always zero
+
 	if r.Method != "POST" {
-		return http.StatusMethodNotAllowed, nil
+		return h.writeJSON(JSONError{
+			Code:  http.StatusMethodNotAllowed,
+			Error: http.StatusText(http.StatusMethodNotAllowed),
+		}, w, nextAvail)
 	}
 
 	if td := h.rlBucket.Take(1); td > 0 {
-		w.WriteHeader(http.StatusTooManyRequests)
-		h.rateLimitHeader(w, td)
-		return http.StatusOK, nil
+		return h.writeJSON(JSONError{
+			Code:  http.StatusTooManyRequests,
+			Error: http.StatusText(http.StatusTooManyRequests),
+		}, w, td)
 	}
 
 	if err := r.ParseForm(); err != nil {
-		return http.StatusBadRequest, err
+		return h.writeJSON(JSONError{
+			Code:  http.StatusBadRequest,
+			Error: err.Error(),
+		}, w, nextAvail)
 	}
 
 	if e := r.PostFormValue("email"); false == isValidEmail(e) {
 		return h.writeJSON(JSONError{
+			Code:  StatusUnprocessableEntity,
 			Error: fmt.Sprintf("Invalid email address: %q", e),
-		}, StatusUnprocessableEntity, w)
+		}, w, nextAvail)
 	}
 
 	if h.reqPipe != nil {
 		h.reqPipe <- r
 	}
-	return h.writeJSON(JSONError{}, http.StatusOK, w)
-}
-
-func (h *handler) rateLimitHeader(w http.ResponseWriter, nextAvailable time.Duration) {
-	w.Header().Set(HeaderXRateLimitLimit, strconv.FormatInt(h.rlBucket.Capacity()-h.rlBucket.Available(), 10))
-	w.Header().Set(HeaderXRateLimitRemaining, strconv.FormatInt(h.rlBucket.Available(), 10))
-	w.Header().Set(HeaderXRateLimitReset, strconv.FormatInt(int64(nextAvailable.Seconds()), 10))
+	return h.writeJSON(JSONError{Code: http.StatusOK}, w, nextAvail)
 }
 
 type JSONError struct {
+	// Code represents the HTTP Status Code, a work around.
+	Code  int
 	Error string `json:"error,omitempty"`
 }
 
-func (h *handler) writeJSON(je JSONError, code int, w http.ResponseWriter) (int, error) {
+func (h *handler) writeJSON(je JSONError, w http.ResponseWriter, nextAvailable time.Duration) (int, error) {
 	buf := bufpool.Get()
 	defer bufpool.Put(buf)
 
-	fmt.Printf("%#v\n\n",w)
-
 	// https://github.com/mholt/caddy/wiki/Writing-Middleware#return-values-and-writing-responses
 	// that does not play well with RESTful API design ....
-	w.WriteHeader(code) // caddy always prints out non 200 codes and that breaks this API.
+	// w.WriteHeader(code) // caddy always prints out non 200 codes and that breaks this API.
 
-	w.Header().Set("X-"+HeaderContentType, HeaderApplicationJSONUTF8)
-
-	h.rateLimitHeader(w, h.config.rateLimitInterval)
-
-	fmt.Printf("%#v\n\n\n",w)
-
+	w.Header().Set(HeaderContentType, HeaderApplicationJSONUTF8)
+	w.Header().Set(HeaderXRateLimitLimit, strconv.FormatInt(h.rlBucket.Capacity()-h.rlBucket.Available(), 10))
+	w.Header().Set(HeaderXRateLimitRemaining, strconv.FormatInt(h.rlBucket.Available(), 10))
+	w.Header().Set(HeaderXRateLimitReset, strconv.FormatInt(int64(nextAvailable.Seconds()), 10))
 
 	if err := json.NewEncoder(buf).Encode(je); err != nil {
 		return http.StatusInternalServerError, err
