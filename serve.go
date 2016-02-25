@@ -97,14 +97,14 @@ func (h *handler) writeJSON(je JSONError, w http.ResponseWriter, nextAvailable t
 	buf := bufpool.Get()
 	defer bufpool.Put(buf)
 
-	// https://github.com/mholt/caddy/wiki/Writing-Middleware#return-values-and-writing-responses
-	// that does not play well with RESTful API design ....
-	// w.WriteHeader(code) // caddy always prints out non 200 codes and that breaks this API.
-
 	w.Header().Set(HeaderContentType, HeaderApplicationJSONUTF8)
 	w.Header().Set(HeaderXRateLimitLimit, strconv.FormatInt(h.rlBucket.Capacity()-h.rlBucket.Available(), 10))
 	w.Header().Set(HeaderXRateLimitRemaining, strconv.FormatInt(h.rlBucket.Available(), 10))
 	w.Header().Set(HeaderXRateLimitReset, strconv.FormatInt(int64(nextAvailable.Seconds()), 10))
+
+	// https://github.com/mholt/caddy/wiki/Writing-Middleware#return-values-and-writing-responses
+	// that does not play well with RESTful API design ....
+	w.WriteHeader(je.Code) // caddy always prints out errors >= 400 codes and that breaks this API.
 
 	if err := json.NewEncoder(buf).Encode(je); err != nil {
 		return http.StatusInternalServerError, err
@@ -112,5 +112,6 @@ func (h *handler) writeJSON(je JSONError, w http.ResponseWriter, nextAvailable t
 	if _, err := w.Write(buf.Bytes()); err != nil {
 		return http.StatusInternalServerError, err
 	}
+
 	return http.StatusOK, nil // so caddy always gets a 200 from us
 }

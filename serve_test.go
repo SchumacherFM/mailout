@@ -50,7 +50,7 @@ func TestServeHTTP_ShouldNotValidateEmailAddress(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert.Exactly(t, http.StatusOK, code)
-	assert.Exactly(t, `{"error":"Invalid email address: \"ken\\uf8ffthompson.email\""}`+"\n", w.Body.String())
+	assert.Exactly(t, "{\"Code\":422,\"error\":\"Invalid email address: \\\"ken\\\\uf8ffthompson.email\\\"\"}\n", w.Body.String())
 	assert.Exactly(t, StatusUnprocessableEntity, w.Code)
 	assert.Exactly(t, HeaderApplicationJSONUTF8, w.HeaderMap.Get(HeaderContentType))
 }
@@ -68,9 +68,10 @@ func TestServeHTTP_ShouldNotParseForm(t *testing.T) {
 	}
 	w := httptest.NewRecorder()
 	code, err := h.ServeHTTP(w, req)
-	assert.Exactly(t, http.StatusBadRequest, code)
-	assert.EqualError(t, err, "missing form body")
-	assert.Empty(t, w.HeaderMap)
+	assert.Exactly(t, http.StatusOK, code)
+	assert.Exactly(t, http.StatusBadRequest, w.Code)
+	assert.NoError(t, err )
+	assert.Len(t, w.HeaderMap,4)
 }
 
 func TestServeHTTP_ShouldNotMatchPOST(t *testing.T) {
@@ -89,8 +90,9 @@ func TestServeHTTP_ShouldNotMatchPOST(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Exactly(t, http.StatusMethodNotAllowed, code)
-	assert.Empty(t, w.HeaderMap)
+	assert.Exactly(t, http.StatusOK, code)
+	assert.Exactly(t, http.StatusMethodNotAllowed, w.Code)
+	assert.Len(t, w.HeaderMap,4)
 }
 
 func TestServeHTTP_ShouldNotMatchEndpoint(t *testing.T) {
