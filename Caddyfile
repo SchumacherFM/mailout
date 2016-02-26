@@ -17,7 +17,8 @@ turmhof.local, schumacherfm.local {
         host            127.0.0.1
         port            1025
 
-        ratelimit_capacity 5
+        ratelimit_capacity 3
+        ratelimit_interval 6s
     }
 
 }

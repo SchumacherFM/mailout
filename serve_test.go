@@ -2,12 +2,10 @@ package mailout
 
 import (
 	"net/http"
-	"testing"
-
 	"net/http/httptest"
 	"net/url"
-
-	"fmt"
+	"testing"
+	"time"
 
 	"github.com/mholt/caddy/caddy/setup"
 	"github.com/mholt/caddy/middleware"
@@ -70,8 +68,8 @@ func TestServeHTTP_ShouldNotParseForm(t *testing.T) {
 	code, err := h.ServeHTTP(w, req)
 	assert.Exactly(t, http.StatusOK, code)
 	assert.Exactly(t, http.StatusBadRequest, w.Code)
-	assert.NoError(t, err )
-	assert.Len(t, w.HeaderMap,4)
+	assert.NoError(t, err)
+	assert.Len(t, w.HeaderMap, 1)
 }
 
 func TestServeHTTP_ShouldNotMatchPOST(t *testing.T) {
@@ -92,7 +90,7 @@ func TestServeHTTP_ShouldNotMatchPOST(t *testing.T) {
 	}
 	assert.Exactly(t, http.StatusOK, code)
 	assert.Exactly(t, http.StatusMethodNotAllowed, w.Code)
-	assert.Len(t, w.HeaderMap,4)
+	assert.Len(t, w.HeaderMap, 1)
 }
 
 func TestServeHTTP_ShouldNotMatchEndpoint(t *testing.T) {
@@ -120,8 +118,8 @@ func TestServeHTTP_RateLimitShouldBeApplied(t *testing.T) {
 	t.Parallel()
 
 	h := newTestHandler(t, `mailout {
-		ratelimit_interval 3s
-		ratelimit_capacity 5
+		ratelimit_interval 100ms
+		ratelimit_capacity 4
 	}`)
 
 	data := make(url.Values)
@@ -143,31 +141,33 @@ func TestServeHTTP_RateLimitShouldBeApplied(t *testing.T) {
 			t.Fatal("Request:", i, "Error:", err)
 		}
 		assert.Exactly(t, http.StatusOK, code, "Request %d", i)
+		assert.Exactly(t, http.StatusOK, w.Code, "Request %d", i)
 
-		//t.Log(HeaderXRateLimitLimit, w.HeaderMap.Get(HeaderXRateLimitLimit))
-		assert.Exactly(t, fmt.Sprintf("%d", i), w.HeaderMap.Get(HeaderXRateLimitLimit))
-
-		// t.Log(HeaderXRateLimitRemaining, w.HeaderMap.Get(HeaderXRateLimitRemaining))
-		assert.Exactly(t, fmt.Sprintf("%d", 5-i), w.HeaderMap.Get(HeaderXRateLimitRemaining))
-
-		//t.Log(HeaderXRateLimitReset, w.HeaderMap.Get(HeaderXRateLimitReset))
-		assert.Exactly(t, "3", w.HeaderMap.Get(HeaderXRateLimitReset))
 		//t.Log("Request",i,"\n")
 		assert.Exactly(t, HeaderApplicationJSONUTF8, w.HeaderMap.Get(HeaderContentType))
-		assert.Len(t, w.HeaderMap, 4)
+		assert.Len(t, w.HeaderMap, 1)
 	}
 
-	{
+	for i := 6; i <= 8; i++ {
 		w := httptest.NewRecorder()
 		code, err := h.ServeHTTP(w, req)
 		if err != nil {
-			t.Fatal("Request:", 6, "Error:", err)
+			t.Fatal("Request:", i, "Error:", err)
 		}
-		assert.Exactly(t, http.StatusOK, code)
-		assert.Exactly(t, http.StatusTooManyRequests, w.Code)
-		assert.Exactly(t, "6", w.HeaderMap.Get(HeaderXRateLimitLimit))
-		assert.Exactly(t, "-1", w.HeaderMap.Get(HeaderXRateLimitRemaining))
-		assert.Exactly(t, "2", w.HeaderMap.Get(HeaderXRateLimitReset))
-		assert.Len(t, w.HeaderMap, 3)
+		assert.Exactly(t, http.StatusOK, code, "Request %d", i)
+		assert.Exactly(t, http.StatusTooManyRequests, w.Code, "Request %d", i)
+
+		assert.Len(t, w.HeaderMap, 1, "Request %d", i)
 	}
+
+	i := 9
+	time.Sleep(time.Millisecond * 100)
+	w := httptest.NewRecorder()
+	code, err := h.ServeHTTP(w, req)
+	if err != nil {
+		t.Fatal("Request:", i, "Error:", err)
+	}
+	assert.Exactly(t, http.StatusOK, code, "Request %d", i)
+	assert.Exactly(t, http.StatusOK, w.Code, "Request %d", i)
+	assert.Len(t, w.HeaderMap, 1, "Request %d", i)
 }

@@ -45,45 +45,45 @@ If you don't like this file name you can overwrite it with the key `publickeyAtt
 To implement a fully working *This is an OpenPGP/MIME encrypted message (RFC 4880 and 3156)* PGP attachment, 
 I need some help. It's possible that the gomail package needs to be refactored.
 
+Rate limit: Does not require external storage since it uses an algorithm called [Token Bucket](http://en.wikipedia.org/wiki/Token_bucket) [(Go library: juju/ratelimit)](https://github.com/juju/ratelimit).
+
 ### JSON API
 
 Server response on success (Status 200 OK):
 
 ```
-{}
+{"Code":200}
 ```
 
 Server response on error (Status 422 Unprocessable Entity):
 
 ```
-{"error":"Invalid email address: \"doe.john_AT_nonexistantServer.email\""}
+{"Code":422,"error":"Invalid email address: \"doe.john40nonexistantServer.email\""}
 ```
 
-Server response on non-POST requests (Status 405 Method Not Allowed, non-JSON response):
+Server response on non-POST requests (Status 405 Method Not Allowed):
 
 ```
-Method not allowed
+{"Code":405,"error":"Method Not Allowed"}
 ```
 
-Server response on form parse error (Status 400 Bad Request, non-JSON response):
+Server response on form parse error (Status 400 Bad Request):
 
 ```
-Bad request
+{"Code":400,"error":"Bad request"}
 ```
 
-TODO: Server response on reaching the rate limit (Status 429 Too Many Requests, non-JSON response):
+Server response on reaching the rate limit (Status 429 Too Many Requests):
 
 ```
-Too many requests
+{"Code":429,"error":"Too Many Requests"}
 ```
 
-Rate limit will be e.g. more than 1000 emails per 24h. All requests will contain the headers:
-
-- X-Rate-Limit-Limit - The number of allowed requests in the current period
-- X-Rate-Limit-Remaining - The number of remaining requests in the current period
-- X-Rate-Limit-Reset - The number of seconds left in the current period
-
-
+Server response on internal errors:
+ 
+```
+500 Internal Server Error
+```
 
 ### HTML form and email template
 

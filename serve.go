@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
-	"time"
 
 	"github.com/SchumacherFM/mailout/bufpool"
 	"github.com/juju/ratelimit"
@@ -14,15 +12,6 @@ import (
 
 // StatusUnprocessableEntity gets returned whenever parsing of the form fails.
 const StatusUnprocessableEntity = 422
-
-const (
-	// HeaderXRateLimitLimit - The number of allowed requests in the current period
-	HeaderXRateLimitLimit = "X-Rate-Limit-Limit"
-	// HeaderXRateLimitRemaining - The number of remaining requests in the current period
-	HeaderXRateLimitRemaining = "X-Rate-Limit-Remaining"
-	// HeaderXRateLimitReset - The number of seconds left in the current period
-	HeaderXRateLimitReset = "X-Rate-Limit-Reset"
-)
 
 const (
 	HeaderContentType         = "Content-Type"
@@ -51,40 +40,38 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 		return h.Next.ServeHTTP(w, r)
 	}
 
-	var nextAvail time.Duration // always zero
-
 	if r.Method != "POST" {
 		return h.writeJSON(JSONError{
 			Code:  http.StatusMethodNotAllowed,
 			Error: http.StatusText(http.StatusMethodNotAllowed),
-		}, w, nextAvail)
+		}, w)
 	}
 
-	if td := h.rlBucket.Take(1); td > 0 {
+	if _, ok := h.rlBucket.TakeMaxDuration(1, h.config.rateLimitInterval); !ok {
 		return h.writeJSON(JSONError{
 			Code:  http.StatusTooManyRequests,
 			Error: http.StatusText(http.StatusTooManyRequests),
-		}, w, td)
+		}, w)
 	}
 
 	if err := r.ParseForm(); err != nil {
 		return h.writeJSON(JSONError{
 			Code:  http.StatusBadRequest,
 			Error: err.Error(),
-		}, w, nextAvail)
+		}, w)
 	}
 
 	if e := r.PostFormValue("email"); false == isValidEmail(e) {
 		return h.writeJSON(JSONError{
 			Code:  StatusUnprocessableEntity,
 			Error: fmt.Sprintf("Invalid email address: %q", e),
-		}, w, nextAvail)
+		}, w)
 	}
 
 	if h.reqPipe != nil {
 		h.reqPipe <- r
 	}
-	return h.writeJSON(JSONError{Code: http.StatusOK}, w, nextAvail)
+	return h.writeJSON(JSONError{Code: http.StatusOK}, w)
 }
 
 type JSONError struct {
@@ -93,14 +80,11 @@ type JSONError struct {
 	Error string `json:"error,omitempty"`
 }
 
-func (h *handler) writeJSON(je JSONError, w http.ResponseWriter, nextAvailable time.Duration) (int, error) {
+func (h *handler) writeJSON(je JSONError, w http.ResponseWriter) (int, error) {
 	buf := bufpool.Get()
 	defer bufpool.Put(buf)
 
 	w.Header().Set(HeaderContentType, HeaderApplicationJSONUTF8)
-	w.Header().Set(HeaderXRateLimitLimit, strconv.FormatInt(h.rlBucket.Capacity()-h.rlBucket.Available(), 10))
-	w.Header().Set(HeaderXRateLimitRemaining, strconv.FormatInt(h.rlBucket.Available(), 10))
-	w.Header().Set(HeaderXRateLimitReset, strconv.FormatInt(int64(nextAvailable.Seconds()), 10))
 
 	// https://github.com/mholt/caddy/wiki/Writing-Middleware#return-values-and-writing-responses
 	// that does not play well with RESTful API design ....
