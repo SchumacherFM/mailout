@@ -48,6 +48,13 @@ func (l Logger) Init(hosts ...string) (Logger, error) {
 	if l.IsNil() {
 		return Logger{}, nil
 	}
+
+	// clean host name
+	rpl := strings.NewReplacer("/", "", string(os.PathSeparator), "", ":", "", "https", "", "http", "")
+	for i, h := range hosts {
+		hosts[i] = rpl.Replace(h)
+	}
+
 	l.hosts = hosts
 	for _, dir := range [...]string{l.MailDir, l.ErrDir} {
 		if dir == "" {

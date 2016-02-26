@@ -1,4 +1,4 @@
-turmhof.local, schumacherfm.local {
+http://schumacherfm.local:2015 {
 
     tls off
 
@@ -23,7 +23,7 @@ turmhof.local, schumacherfm.local {
 
 }
 
-iair.dev, zerobin.dev {
+http://iair.dev:2015 {
 
     tls off
 

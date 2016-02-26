@@ -64,7 +64,7 @@ func TestNewMailWriteValid(t *testing.T) {
 			t.Fatal(err)
 		}
 	}()
-	l, err := maillog.New(testDir, "").Init()
+	l, err := maillog.New(testDir, "").Init("http://schumacherfm.local")
 	if err != nil {
 		t.Fatal(err)
 	}
