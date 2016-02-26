@@ -65,9 +65,11 @@ func (bm message) renderSubject() {
 	defer bufpool.Put(subjBuf)
 
 	err := bm.mc.subjectTpl.Execute(subjBuf, struct {
-		Form url.Values
+		Form    url.Values
+		Request *http.Request
 	}{
-		Form: bm.r.PostForm,
+		Form:    bm.r.PostForm,
+		Request: bm.r,
 	})
 	if err != nil {
 		bm.mc.maillog.Errorf("Render Subject Error: %s\nForm: %#v\nWritten: %s", err, bm.r.PostForm, subjBuf)
@@ -140,9 +142,11 @@ func (bm message) bodyUnencrypted() {
 
 func (bm message) renderTemplate(buf *bytes.Buffer) {
 	err := bm.mc.bodyTpl.Execute(buf, struct {
-		Form url.Values
+		Form    url.Values
+		Request *http.Request
 	}{
-		Form: bm.r.PostForm,
+		Form:    bm.r.PostForm,
+		Request: bm.r,
 	})
 	if err != nil {
 		bm.mc.maillog.Errorf("Render Error: %s\nForm: %#v\nWritten: %s", err, bm.r.PostForm, buf)
