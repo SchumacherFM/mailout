@@ -48,7 +48,7 @@ func TestServeHTTP_ShouldNotValidateEmailAddress(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert.Exactly(t, http.StatusOK, code)
-	assert.Exactly(t, "{\"Code\":422,\"error\":\"Invalid email address: \\\"ken\\\\uf8ffthompson.email\\\"\"}\n", w.Body.String())
+	assert.Exactly(t, "{\"code\":422,\"error\":\"Invalid email address: \\\"ken\\\\uf8ffthompson.email\\\"\"}\n", w.Body.String())
 	assert.Exactly(t, StatusUnprocessableEntity, w.Code)
 	assert.Exactly(t, HeaderApplicationJSONUTF8, w.HeaderMap.Get(HeaderContentType))
 }

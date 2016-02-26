@@ -52,31 +52,31 @@ Rate limit: Does not require external storage since it uses an algorithm called 
 Server response on success (Status 200 OK):
 
 ```
-{"Code":200}
+{"code":200}
 ```
 
 Server response on error (Status 422 Unprocessable Entity):
 
 ```
-{"Code":422,"error":"Invalid email address: \"doe.john40nonexistantServer.email\""}
+{"code":422,"error":"Invalid email address: \"doe.john40nonexistantServer.email\""}
 ```
 
 Server response on non-POST requests (Status 405 Method Not Allowed):
 
 ```
-{"Code":405,"error":"Method Not Allowed"}
+{"code":405,"error":"Method Not Allowed"}
 ```
 
 Server response on form parse error (Status 400 Bad Request):
 
 ```
-{"Code":400,"error":"Bad request"}
+{"code":400,"error":"Bad request"}
 ```
 
 Server response on reaching the rate limit (Status 429 Too Many Requests):
 
 ```
-{"Code":429,"error":"Too Many Requests"}
+{"code":429,"error":"Too Many Requests"}
 ```
 
 Server response on internal errors:
