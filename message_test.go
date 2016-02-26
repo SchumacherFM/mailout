@@ -49,7 +49,7 @@ func testDoPost(t *testing.T, url string, data url.Values) *http.Response {
 	return resp
 }
 
-func TestMessagePlainText(t *testing.T) {
+func TestMessagePlainTextAllFormFields(t *testing.T) {
 	t.Parallel()
 
 	const caddyFile = `mailout {
@@ -73,8 +73,36 @@ func TestMessagePlainText(t *testing.T) {
 
 	assert.Len(t, buf.String(), 424) // whenever you change the template, change also here
 	assert.Contains(t, buf.String(), "Email ken@thompson.email")
+	assert.Contains(t, buf.String(), `From: "Ken Thompson" <ken@thompson.email>`)
 	assert.Contains(t, buf.String(), "Subject: Email from Ken Thompson")
 	assert.Contains(t, buf.String(), "Cc: gopher1@domain.email, gopher2@domain.email")
+}
+
+
+func TestMessagePlainTextWithOutFormInputName(t *testing.T) {
+	t.Parallel()
+
+	const caddyFile = `mailout {
+				to              gopher@domain.email
+				subject         "Email from {{ .Form.Get \"firstname\" }} {{.Form.Get \"lastname\"}}"
+				body            testdata/mail_plainTextMessage.txt
+			}`
+
+	buf := new(bytes.Buffer)
+	srv := testMessageServer(t, caddyFile, buf)
+	defer srv.Close()
+
+	data := make(url.Values)
+	data.Set("firstname", "Ken")
+	data.Set("lastname", "Thompson")
+	data.Set("email", "ken@thompson.email")
+
+	testDoPost(t, srv.URL, data)
+
+	assert.Len(t, buf.String(), 359) // whenever you change the template, change also here
+	assert.Contains(t, buf.String(), "Email ken@thompson.email")
+	assert.Contains(t, buf.String(), "Subject: Email from Ken Thompson")
+	assert.Contains(t, buf.String(), `From: ken@thompson.email`)
 }
 
 func TestMessageHTML(t *testing.T) {

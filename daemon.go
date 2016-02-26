@@ -16,7 +16,8 @@ func startMailDaemon(mc *config) chan<- *http.Request {
 	return rChan
 }
 
-// goMailDaemonRecover self restarting goroutine
+// goMailDaemonRecover self restarting goroutine.
+// TODO(cs) limit restarting to e.g. 10 tries and then crash it.
 func goMailDaemonRecover(mc *config, rChan <-chan *http.Request) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -31,7 +32,7 @@ func goMailDaemon(mc *config, rChan <-chan *http.Request) {
 	d := gomail.NewPlainDialer(mc.host, mc.port, mc.username, mc.password)
 	if mc.port == 587 {
 		d.TLSConfig = &tls.Config{
-			ServerName: mc.host,
+			ServerName: mc.host, // host names must match between this one and the one requested in the cert.
 		}
 	}
 

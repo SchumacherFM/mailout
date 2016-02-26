@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/url"
 
+	"strings"
+
 	"github.com/SchumacherFM/mailout/bufpool"
 	"golang.org/x/crypto/openpgp"
 	"gopkg.in/gomail.v2"
@@ -57,7 +59,11 @@ func (bm message) header() {
 		bm.gm.SetHeader("Bcc", bm.mc.bcc...)
 	}
 
-	bm.gm.SetAddressHeader("From", bm.r.PostFormValue("email"), bm.r.PostFormValue("name"))
+	if n := strings.TrimSpace(bm.r.PostFormValue("name")); n != "" {
+		bm.gm.SetAddressHeader("From", bm.r.PostFormValue("email"), n)
+		return
+	}
+	bm.gm.SetHeader("From", bm.r.PostFormValue("email"))
 }
 
 func (bm message) renderSubject() {

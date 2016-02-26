@@ -76,7 +76,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 
 type JSONError struct {
 	// Code represents the HTTP Status Code, a work around.
-	Code  int `json:"code,omitempty"`
+	Code  int    `json:"code,omitempty"`
 	Error string `json:"error,omitempty"`
 }
 

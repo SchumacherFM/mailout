@@ -7,7 +7,7 @@ import (
 
 // AverageBufferSize should be adjusted to the average size of a bytes.buffer
 // in your application.
-var AverageBufferSize int = 256
+var AverageBufferSize int = 4096
 
 var bufferPool = &sync.Pool{
 	New: func() interface{} {

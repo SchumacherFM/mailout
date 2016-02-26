@@ -1,18 +1,20 @@
 # mailout - CaddyServer SMTP Client
 
 Post form data from a website to this route and receive the data as nicely formatted email.
-  
-Caddy config options:
+
+Read more: [https://cyrillschumacher.com/projects/2016-02-26-mailout-caddyserver-email-smtp/](https://cyrillschumacher.com/projects/2016-02-26-mailout-caddyserver-email-smtp/)
+
+Mailout config options in the Caddyfile:
 
 ```
 mailout [endpoint] {
 	publickey       [path/to/pgp.pub|ENV:MY_PGP_KEY_PATH|https://keybase.io/cyrill/key.asc]
-	maillog         [path/to/logdir|or empty]
-	errorlog        [path/to/logdir|or empty]
+	maillog         [path/to/logdir]
+	errorlog        [path/to/logdir]
 		
 	to              recipient_to@domain.email       
-	cc              "recipient_cc1@domain.email, recipient_cc2@domain.email"        
-	bcc             "recipient_bcc1@domain.email, recipient_bcc2@domain.email"
+	cc              ["recipient_cc1@domain.email, recipient_cc2@domain.email"]        
+	bcc             ["recipient_bcc1@domain.email, recipient_bcc2@domain.email"]
     subject         "Email from {{.firstname}} {{.lastname}}"
 	body            path/to/tpl.[txt|html]
 	
@@ -38,8 +40,10 @@ mailout [endpoint] {
 - ratelimit_interval: the duration in which the capacity can be consumed. A duration string is a possibly signed sequence of decimal numbers, each with optional fraction and a unit suffix, such as "300ms", "1.5h" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h". Default: 24h  
 - ratelimit_capacity: the overall capacity within the interval. Default: 1000
 
-The default filename for an encrypted message attached to an email is: *encrypted.gpg*. The extension
-`.gpg` has been chosen to allow easy handling with [https://www.gnupg.org/](https://www.gnupg.org/)
+The default filename for an encrypted message attached to an email is: *encrypted.gpg*. 
+
+The extension `.gpg` has been chosen to allow easy handling with [https://www.gnupg.org/](https://www.gnupg.org/)
+
 If you don't like this file name you can overwrite it with the key `publickeyAttachmentFileName`.
 
 To implement a fully working *This is an OpenPGP/MIME encrypted message (RFC 4880 and 3156)* PGP attachment, 
@@ -138,7 +142,6 @@ $(document).ready(function() {
             encode      : true
         })
         .done(function(data) {
-
             console.log(data); 
             $('#contactThankYou').show();
             $('#myContactForm').hide();
@@ -170,6 +173,16 @@ Message:
 User Agent: {{.Form.Get "user_agent"}}
 ```
 
+### HTML Form Fields
+
+A must-have form field is the email address: `<input type="text" name="email" value=""/>` or for HTML5 `<input type="email" name="email" value=""/>`
+
+Optional field should be `name`: `<input type="text" name="name" value=""/>`
+
+Both fields will be merged to the `From` Email address: `"name" <email@address>`.
+
+If you do not provide the name field, only the email address will be used.
+
 ### GMail
 
 If you use Gmail as outgoing server these pages can help:
@@ -182,7 +195,7 @@ I need some help to pimp the authentication feature of [gomail](https://github.c
 # Todo
 
 - file uploads
-- rate limiting
+- CORS
 - implement ideas and improvements from open issues
 
 # Contribute
