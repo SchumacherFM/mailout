@@ -13,6 +13,10 @@ import (
 // StatusUnprocessableEntity gets returned whenever parsing of the form fails.
 const StatusUnprocessableEntity = 422
 
+// StatusEmpty returned by mailout middleware because the proper status gets
+// written previously
+const StatusEmpty = 0
+
 const (
 	HeaderContentType         = "Content-Type"
 	HeaderApplicationJSONUTF8 = "application/json; charset=utf-8"
@@ -86,9 +90,8 @@ func (h *handler) writeJSON(je JSONError, w http.ResponseWriter) (int, error) {
 
 	w.Header().Set(HeaderContentType, HeaderApplicationJSONUTF8)
 
-	// https://github.com/mholt/caddy/wiki/Writing-Middleware#return-values-and-writing-responses
-	// that does not play well with RESTful API design ....
-	w.WriteHeader(je.Code) // caddy always prints out errors >= 400 codes and that breaks this API.
+	// https://github.com/mholt/caddy/issues/637#issuecomment-189599332
+	w.WriteHeader(je.Code)
 
 	if err := json.NewEncoder(buf).Encode(je); err != nil {
 		return http.StatusInternalServerError, err
@@ -97,5 +100,5 @@ func (h *handler) writeJSON(je JSONError, w http.ResponseWriter) (int, error) {
 		return http.StatusInternalServerError, err
 	}
 
-	return http.StatusOK, nil // so caddy always gets a 200 from us
+	return StatusEmpty, nil
 }

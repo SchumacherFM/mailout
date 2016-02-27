@@ -180,6 +180,8 @@ func parse(c *setup.Controller) (mc *config, err error) {
 				if rlc > 0 || rlc == -1 { // deactivated use minus 1 ... a hack ... ;-)
 					mc.rateLimitCapacity = rlc
 				}
+				//default:
+				//	println("val", c.Val())
 			}
 		}
 	}

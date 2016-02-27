@@ -47,7 +47,7 @@ func TestServeHTTP_ShouldNotValidateEmailAddress(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Exactly(t, http.StatusOK, code)
+	assert.Exactly(t, StatusEmpty, code)
 	assert.Exactly(t, "{\"code\":422,\"error\":\"Invalid email address: \\\"ken\\\\uf8ffthompson.email\\\"\"}\n", w.Body.String())
 	assert.Exactly(t, StatusUnprocessableEntity, w.Code)
 	assert.Exactly(t, HeaderApplicationJSONUTF8, w.HeaderMap.Get(HeaderContentType))
@@ -66,7 +66,7 @@ func TestServeHTTP_ShouldNotParseForm(t *testing.T) {
 	}
 	w := httptest.NewRecorder()
 	code, err := h.ServeHTTP(w, req)
-	assert.Exactly(t, http.StatusOK, code)
+	assert.Exactly(t, StatusEmpty, code)
 	assert.Exactly(t, http.StatusBadRequest, w.Code)
 	assert.NoError(t, err)
 	assert.Len(t, w.HeaderMap, 1)
@@ -88,7 +88,7 @@ func TestServeHTTP_ShouldNotMatchPOST(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Exactly(t, http.StatusOK, code)
+	assert.Exactly(t, StatusEmpty, code)
 	assert.Exactly(t, http.StatusMethodNotAllowed, w.Code)
 	assert.Len(t, w.HeaderMap, 1)
 }
@@ -140,7 +140,7 @@ func TestServeHTTP_RateLimitShouldBeApplied(t *testing.T) {
 		if err != nil {
 			t.Fatal("Request:", i, "Error:", err)
 		}
-		assert.Exactly(t, http.StatusOK, code, "Request %d", i)
+		assert.Exactly(t, StatusEmpty, code, "Request %d", i)
 		assert.Exactly(t, http.StatusOK, w.Code, "Request %d", i)
 
 		//t.Log("Request",i,"\n")
@@ -154,7 +154,7 @@ func TestServeHTTP_RateLimitShouldBeApplied(t *testing.T) {
 		if err != nil {
 			t.Fatal("Request:", i, "Error:", err)
 		}
-		assert.Exactly(t, http.StatusOK, code, "Request %d", i)
+		assert.Exactly(t, StatusEmpty, code, "Request %d", i)
 		assert.Exactly(t, http.StatusTooManyRequests, w.Code, "Request %d", i)
 
 		assert.Len(t, w.HeaderMap, 1, "Request %d", i)
@@ -167,7 +167,7 @@ func TestServeHTTP_RateLimitShouldBeApplied(t *testing.T) {
 	if err != nil {
 		t.Fatal("Request:", i, "Error:", err)
 	}
-	assert.Exactly(t, http.StatusOK, code, "Request %d", i)
+	assert.Exactly(t, StatusEmpty, code, "Request %d", i)
 	assert.Exactly(t, http.StatusOK, w.Code, "Request %d", i)
 	assert.Len(t, w.HeaderMap, 1, "Request %d", i)
 }

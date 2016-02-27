@@ -78,7 +78,6 @@ func TestMessagePlainTextAllFormFields(t *testing.T) {
 	assert.Contains(t, buf.String(), "Cc: gopher1@domain.email, gopher2@domain.email")
 }
 
-
 func TestMessagePlainTextWithOutFormInputName(t *testing.T) {
 	t.Parallel()
 

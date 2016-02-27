@@ -196,6 +196,7 @@ I need some help to pimp the authentication feature of [gomail](https://github.c
 
 - file uploads
 - CORS
+- For each receiver email address its own PGP key.
 - implement ideas and improvements from open issues
 
 # Contribute
