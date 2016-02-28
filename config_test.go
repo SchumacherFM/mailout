@@ -62,23 +62,23 @@ func TestConfigLoadPGPKeyHTTPS(t *testing.T) {
 	}{
 		{
 			`mailout {
-				publickey https://keybase.io/cyrill/keyNOTFOUND.asc
+				go@ogle.com https://keybase.io/cyrill/keyNOTFOUND.asc
 			}`,
-			errors.New("Loading remote public key failed from URL \"https://keybase.io/cyrill/keyNOTFOUND.asc\". StatusCode have 404 StatusCode want 200"),
+			errors.New("Cannot load PGP key for email address \"go@ogle.com\" with error: Loading remote public key failed from URL \"https://keybase.io/cyrill/keyNOTFOUND.asc\". StatusCode have 404 StatusCode want 200"),
 			true,
 			mockServerTransport(http.StatusNotFound, "Not found"),
 		},
 		{
 			`mailout {
-				publickey https://keybase.io/cyrill/B06469EE_nopw.pub.asc
+				go@ogle.com https://keybase.io/cyrill/B06469EE_nopw.pub.asc
 			}`,
-			errors.New("Cannot read public key \"https://keybase.io/cyrill/B06469EE_nopw.pub.asc\": openpgp: invalid argument: no armored data found"),
+			errors.New("Cannot load PGP key for email address \"go@ogle.com\" with error: Cannot read public key \"https://keybase.io/cyrill/B06469EE_nopw.pub.asc\": openpgp: invalid argument: no armored data found"),
 			true,
 			mockServerTransport(http.StatusOK, "I'm hacking ..."),
 		},
 		{
 			`mailout {
-				publickey https://keybase.io/cyrill/B06469EE_nopw.pub.asc
+				go@ogle.com https://keybase.io/cyrill/B06469EE_nopw.pub.asc
 			}`,
 			nil,
 			false,
@@ -98,23 +98,23 @@ func TestConfigLoadPGPKeyHTTPS(t *testing.T) {
 
 		mc.httpClient.Transport = trsp
 
-		err = mc.loadPGPKey()
+		err = mc.loadPGPKeys()
 		srv.Close()
 		if test.keyNil && test.expectErr == nil {
 			assert.NoError(t, err, "Index %d", i)
-			assert.Nil(t, mc.publicKeyEntity, "Index %d", i)
+			assert.Empty(t, mc.pgpEmailKeyEntities, "Index %d", i)
 			continue
 		}
 
 		if test.expectErr != nil {
-			assert.Nil(t, mc.publicKeyEntity, "Index %d", i)
+			assert.Empty(t, mc.pgpEmailKeyEntities, "Index %d", i)
 			assert.EqualError(t, err, test.expectErr.Error(), "Index %d", i)
 			continue
 		}
 		assert.NoError(t, err, "Index %d", i)
-		assert.NotNil(t, mc.publicKeyEntity, "Index %d", i)
-		assert.NotNil(t, mc.publicKeyEntity.PrimaryKey, "Index %d", i)
-		assert.Nil(t, mc.publicKeyEntity.PrivateKey, "Index %d", i)
+		assert.NotNil(t, mc.pgpEmailKeyEntities, "Index %d", i)
+		assert.NotNil(t, mc.pgpEmailKeyEntities["go@ogle.com"].PrimaryKey, "Index %d", i)
+		assert.Nil(t, mc.pgpEmailKeyEntities["go@ogle.com"].PrivateKey, "Index %d", i)
 	}
 }
 
@@ -132,23 +132,23 @@ func TestConfigLoadPGPKeyHDD(t *testing.T) {
 		},
 		{
 			`mailout {
-				publickey testdata/B06469EE_nopw.pub.asc
+				go@ogle.com testdata/B06469EE_nopw.pub.asc
 			}`,
 			nil,
 			false,
 		},
 		{
 			`mailout {
-				publickey testdata/B06469EE_nopw.priv.asc
+				go@ogle.com testdata/B06469EE_nopw.priv.asc
 			}`,
-			errors.New("PrivateKey found. Not allowed. Please remove it from file: \"testdata/B06469EE_nopw.priv.asc\""),
+			errors.New("Cannot load PGP key for email address \"go@ogle.com\" with error: PrivateKey found. Not allowed. Please remove it from resouce: \"testdata/B06469EE_nopw.priv.asc\""),
 			true,
 		},
 		{
 			`mailout {
-				publickey http://keybase.io/cyrill/key.asc
+				go@ogle.com xhttp://keybase.io/cyrill/key.asc
 			}`,
-			errors.New("File \"http://keybase.io/cyrill/key.asc\" not found"),
+			errors.New("Cannot load PGP key for email address \"go@ogle.com\" with error: File \"xhttp://keybase.io/cyrill/key.asc\" not found"),
 			true,
 		},
 	}
@@ -160,22 +160,22 @@ func TestConfigLoadPGPKeyHDD(t *testing.T) {
 			t.Fatal("Index", i, "Error:", err)
 		}
 
-		err = mc.loadPGPKey()
+		err = mc.loadPGPKeys()
 		if test.keyNil && test.expectErr == nil {
 			assert.NoError(t, err, "Index %d", i)
-			assert.Nil(t, mc.publicKeyEntity, "Index %d", i)
+			assert.Empty(t, mc.pgpEmailKeyEntities, "Index %d", i)
 			continue
 		}
 
 		if test.expectErr != nil {
-			assert.Nil(t, mc.publicKeyEntity, "Index %d", i)
+			assert.Empty(t, mc.pgpEmailKeyEntities, "Index %d", i)
 			assert.EqualError(t, err, test.expectErr.Error(), "Index %d", i)
 			continue
 		}
 		assert.NoError(t, err, "Index %d", i)
-		assert.NotNil(t, mc.publicKeyEntity, "Index %d", i)
-		assert.NotNil(t, mc.publicKeyEntity.PrimaryKey, "Index %d", i)
-		assert.Nil(t, mc.publicKeyEntity.PrivateKey, "Index %d", i)
+		assert.NotNil(t, mc.pgpEmailKeyEntities, "Index %d", i)
+		assert.NotNil(t, mc.pgpEmailKeyEntities["go@ogle.com"].PrimaryKey, "Index %d", i)
+		assert.Nil(t, mc.pgpEmailKeyEntities["go@ogle.com"].PrivateKey, "Index %d", i)
 	}
 }
 
@@ -237,26 +237,25 @@ func TestLoadFromEnv(t *testing.T) {
 	t.Parallel()
 
 	const testCaddyConfig = `mailout {
-	publickey 		ENV:CADDY_MAILOUT_KEY
-	username		ENV:CADDY_MAILOUT_USER
-	password		ENV:CADDY_MAILOUT_PW
-	host            ENV:CADDY_MAILOUT_HOST
-	port            ENV:CADDY_MAILOUT_PORT
+	pgpmail@domain.host		ENV:CADDY_MAILOUT_KEY
+	username				ENV:CADDY_MAILOUT_USER
+	password				ENV:CADDY_MAILOUT_PW
+	host            		ENV:CADDY_MAILOUT_HOST
+	port            		1030
 }`
 
 	assert.NoError(t, os.Setenv("CADDY_MAILOUT_KEY", "testdata/B06469EE_nopw.pub.asc"))
 	assert.NoError(t, os.Setenv("CADDY_MAILOUT_USER", "luser"))
 	assert.NoError(t, os.Setenv("CADDY_MAILOUT_PW", "123456"))
 	assert.NoError(t, os.Setenv("CADDY_MAILOUT_HOST", "127.0.0.4"))
-	assert.NoError(t, os.Setenv("CADDY_MAILOUT_PORT", "29"))
 
 	wantConfig := newConfig()
-	wantConfig.publicKey = `testdata/B06469EE_nopw.pub.asc`
+	wantConfig.pgpEmailKeys = []string{`pgpmail@domain.host`, `testdata/B06469EE_nopw.pub.asc`}
 	wantConfig.username = "luser"
 	wantConfig.password = "123456"
 	wantConfig.host = "127.0.0.4"
-	wantConfig.portRaw = "29"
-	wantConfig.port = 29
+	wantConfig.portRaw = "1030"
+	wantConfig.port = 1030
 
 	c := setup.NewTestController(testCaddyConfig)
 	mc, err := parse(c)

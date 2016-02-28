@@ -8,16 +8,17 @@ Mailout config options in the Caddyfile:
 
 ```
 mailout [endpoint] {
-	publickey       [path/to/pgp.pub|ENV:MY_PGP_KEY_PATH|https://keybase.io/cyrill/key.asc]
 	maillog         [path/to/logdir]
 	errorlog        [path/to/logdir]
-		
+
 	to              recipient_to@domain.email       
 	cc              ["recipient_cc1@domain.email, recipient_cc2@domain.email"]        
 	bcc             ["recipient_bcc1@domain.email, recipient_bcc2@domain.email"]
     subject         "Email from {{.firstname}} {{.lastname}}"
 	body            path/to/tpl.[txt|html]
-	
+
+	[email-address]       [path/to/pgp.pub|ENV:MY_PGP_KEY_PATH|https://keybase.io/cyrill/key.asc]
+
 	username        "[ENV:MY_SMTP_USERNAME|gopher]"
 	password        "[ENV:MY_SMTP_PASSWORD|g0ph3r]"
 	host            "[ENV:MY_SMTP_HOST|smtp.gmail.com]"
@@ -29,7 +30,7 @@ mailout [endpoint] {
 ```
 
 - endpoint: Can be any path but your POST request must match it. Default path: `/mailout`
-- publickey: if provided mails get encrypted. Set a path to a file, an environment variable or an URL to a key on a HTTPS site.
+- [email-address]: if provided mails get encrypted. Set a path to a file, an environment variable or an URL to a key on a HTTPS site. Key = email address; value = PGP Key
 - maillog: Specify a directory, which gets created recursively, and emails will be written in here, as a backup. Leaving the maillog setting empty does not log anything. Every sent email is saved into its own file. Strict file permissions apply. 
 - errorlog: Specify a directory, which gets created recursively, and errors gets logged in there. Leaving the errorlog setting empty does not log anything. Strict file permissions apply. 
 - to, cc, bcc: Multiple email addresses must be separated by a colon and within double quotes.
@@ -48,6 +49,11 @@ If you don't like this file name you can overwrite it with the key `publickeyAtt
 
 To implement a fully working *This is an OpenPGP/MIME encrypted message (RFC 4880 and 3156)* PGP attachment, 
 I need some help. It's possible that the gomail package needs to be refactored.
+
+Note on sensitive information leakage when using PGP with multiple email message receivers: For each 
+email address in the to, cc and bcc field you must add a public PGP key, if not, emails to recipients
+without a public key won't be encrypted. For all email addresses with a PGP key, the mailout middleware
+will send a separated email encrypted with the key of the receiver.
 
 Rate limit: Does not require external storage since it uses an algorithm called [Token Bucket](http://en.wikipedia.org/wiki/Token_bucket) [(Go library: juju/ratelimit)](https://github.com/juju/ratelimit).
 

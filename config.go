@@ -34,19 +34,27 @@ type config struct {
 	// endpoint the route name where we receive the post requests
 	endpoint string
 
-	// publicKey path, ENV or URL [path/to/pgp.pub|https://keybase.io/cyrill/key.asc]
-	// only loads from https
-	publicKey string
-	// publicKeyEntity loaded and parsed publicKey
-	publicKeyEntity *openpgp.Entity
+	// pgpEmailKeys a key value balanced slice containing even positions
+	// the email address and on odd position the path to the PGP public key
+	// path, ENV or URL [path/to/pgp.pub|https://keybase.io/cyrill/key.asc]
+	// Remote keys will only be loaded from HTTP(S) sources.
+	// This slice gets filled during setup.
+	pgpEmailKeys []string
+	// pgpEmailKeyEntities loaded and parsed publicKey. Key = email address and
+	// value = public key. This map gets filled during the call to loadPGPKeys()
+	pgpEmailKeyEntities map[string]*openpgp.Entity
 	// pgpAttachmentName name of the email attachment file.
 	pgpAttachmentName string
+
+	// messageCount set during call to loadPGPKeys() to set number of messages
+	// to create for sending.
+	messageCount int
 
 	// httpClient for now used to download an external public key
 	httpClient *http.Client
 
-	// maillog writes each email into one file in a directory. If nil, writes to /dev/null
-	// also logs errors.
+	// maillog writes each email into one file in a directory. If nil, writes
+	// to /dev/null also logs errors.
 	maillog maillog.Logger
 
 	// to              recipient_to@domain.email
@@ -87,39 +95,72 @@ func newConfig() *config {
 		httpClient:        defaultHttpClient,
 		pgpAttachmentName: "encrypted.gpg",
 		host:              "localhost",
-		port:              1025, // mailcatcher (a ruby app) default port
+		port:              1025, // mailhog (github.com/mailhog/MailHog) default port
 		rateLimitInterval: time.Hour * 24,
 		rateLimitCapacity: 1000,
 	}
 }
 
-func (c *config) loadPGPKey() error {
+// calcMessageCount calculates the number of messages to generate depending on
+// the PGP key amount.
+func (c *config) calcMessageCount() error {
+	c.messageCount = len(c.pgpEmailKeyEntities)
+	if len(c.to) > 0 || len(c.cc) > 0 || len(c.bcc) > 0 {
+		c.messageCount++
+	}
+	return nil
+}
 
-	if c.publicKey == "" {
+func (c *config) loadPGPKeys() error {
+
+	if len(c.pgpEmailKeys) == 0 {
 		return nil
 	}
+	if l := len(c.pgpEmailKeys); l > 0 && l%2 != 0 {
+		return fmt.Errorf("Imbalanced PGP email addresses and keys: %v", c.pgpEmailKeys)
+	}
 
+	c.pgpEmailKeyEntities = make(map[string]*openpgp.Entity)
+
+	for i := 0; i < len(c.pgpEmailKeys); i = i + 2 {
+		pubKey, err := c.loadPGPKey(c.pgpEmailKeys[i+1])
+		if err != nil {
+			return fmt.Errorf("Cannot load PGP key for email address %q with error: %s", c.pgpEmailKeys[i], err)
+		}
+		c.pgpEmailKeyEntities[c.pgpEmailKeys[i]] = pubKey
+	}
+
+	// remove PGP emails from to,cc and bcc
+	for addr, _ := range c.pgpEmailKeyEntities {
+		c.to = deleteEntrySS(c.to, addr)
+		c.cc = deleteEntrySS(c.cc, addr)
+		c.bcc = deleteEntrySS(c.bcc, addr)
+	}
+	return c.calcMessageCount()
+}
+
+func (c *config) loadPGPKey(pathToKey string) (ent *openpgp.Entity, err error) {
 	var keyRC io.ReadCloser
-	if strings.Index(c.publicKey, "https://") == 0 {
-		httpData, err := c.httpClient.Get(c.publicKey)
+	if strings.Index(pathToKey, "http") == 0 {
+		httpData, err := c.httpClient.Get(pathToKey)
 		if httpData != nil {
 			keyRC = httpData.Body
 			defer keyRC.Close()
 		}
 		if err != nil {
-			return fmt.Errorf("Loading of remote public key from URL %q failed:\n%s", c.publicKey, err)
+			return nil, fmt.Errorf("Loading of remote public key from URL %q failed:\n%s", pathToKey, err)
 		}
 		if httpData.StatusCode != 200 {
-			return fmt.Errorf("Loading remote public key failed from URL %q. StatusCode have %d StatusCode want %d", c.publicKey, httpData.StatusCode, 200)
+			return nil, fmt.Errorf("Loading remote public key failed from URL %q. StatusCode have %d StatusCode want %d", pathToKey, httpData.StatusCode, 200)
 		}
 
 	} else {
-		if false == fileExists(c.publicKey) {
-			return fmt.Errorf("File %q not found", c.publicKey)
+		if false == fileExists(pathToKey) {
+			return nil, fmt.Errorf("File %q not found", pathToKey)
 		}
-		f, err := os.Open(c.publicKey)
+		f, err := os.Open(pathToKey)
 		if err != nil {
-			return fmt.Errorf("File %q not loaded because of error: %s", c.publicKey, err)
+			return nil, fmt.Errorf("File %q not loaded because of error: %s", pathToKey, err)
 		}
 		keyRC = f
 		defer keyRC.Close()
@@ -127,21 +168,24 @@ func (c *config) loadPGPKey() error {
 
 	keyList, err := openpgp.ReadArmoredKeyRing(keyRC)
 	if err != nil {
-		return fmt.Errorf("Cannot read public key %q: %s", c.publicKey, err)
+		return nil, fmt.Errorf("Cannot read public key %q: %s", pathToKey, err)
 	}
-	c.publicKeyEntity = keyList[0]
+	ent = keyList[0]
 
-	if c.publicKeyEntity.PrivateKey != nil {
-		c.publicKeyEntity = nil
-		return fmt.Errorf("PrivateKey found. Not allowed. Please remove it from file: %q", c.publicKey)
+	if ent.PrivateKey != nil {
+		ent = nil
+		err = fmt.Errorf("PrivateKey found. Not allowed. Please remove it from resouce: %q", pathToKey)
 	}
-
-	return nil
+	return
 }
 
 func (c *config) loadFromEnv() error {
 	var err error
-	c.publicKey = loadFromEnv(c.publicKey)
+	if l := len(c.pgpEmailKeys); l > 0 && l%2 == 0 {
+		for i := 0; i < len(c.pgpEmailKeys); i = i + 2 {
+			c.pgpEmailKeys[i+1] = loadFromEnv(c.pgpEmailKeys[i+1])
+		}
+	}
 	c.username = loadFromEnv(c.username)
 	c.password = loadFromEnv(c.password)
 	c.host = loadFromEnv(c.host)

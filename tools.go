@@ -34,3 +34,14 @@ var emailRegex = regexp.MustCompile(emailRegexString)
 func isValidEmail(email string) bool {
 	return emailRegex.MatchString(email)
 }
+
+// deleteEntrySS removes on entry from a string slice
+func deleteEntrySS(sl []string, toDelete string) []string {
+	var ret = make([]string, 0, len(sl))
+	for _, s := range sl {
+		if s != toDelete {
+			ret = append(ret, s)
+		}
+	}
+	return ret
+}

@@ -17,25 +17,25 @@ func TestSetupParse(t *testing.T) {
 		expectErr  error
 		expectConf func() *config
 	}{
-		0: {
+		{
 			`mailout`,
 			nil,
 			func() *config {
 				return newConfig()
 			},
 		},
-		1: {
+		{
 			`mailout {
-				publickey testdata/B06469EE_nopw.pub.asc
+				recipient_to@domain.email 	testdata/B06469EE_nopw.pub.asc
 			}`,
 			nil,
 			func() *config {
 				c := newConfig()
-				c.publicKey = `testdata/B06469EE_nopw.pub.asc`
+				c.pgpEmailKeys = []string{`recipient_to@domain.email`, `testdata/B06469EE_nopw.pub.asc`}
 				return c
 			},
 		},
-		2: {
+		{
 			`mailout /karate`,
 			nil,
 			func() *config {
@@ -44,21 +44,21 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		3: {
+		{
 			`mailout /kungfu {
-				publickey testdata/B06469EE_nopw.pub.asc
+				recipient_to@domain.email 	testdata/B06469EE_nopw.pub.asc
 			}`,
 			nil,
 			func() *config {
 				c := newConfig()
 				c.endpoint = "/kungfu"
-				c.publicKey = `testdata/B06469EE_nopw.pub.asc`
+				c.pgpEmailKeys = []string{`recipient_to@domain.email`, `testdata/B06469EE_nopw.pub.asc`}
 				return c
 			},
 		},
-		4: {
+		{
 			`mailout {
-				publickey testdata/B06469EE_nopw.pub.asc
+				recipient_to@domain.email testdata/B06469EE_nopw.pub.asc
 				to              recipient_to@domain.email
 				cc              "recipient_cc1@domain.email, recipient_cc2@domain.email"
 				bcc             "recipient_bcc1@domain.email, recipient_bcc2@domain.email"
@@ -70,7 +70,7 @@ func TestSetupParse(t *testing.T) {
 			nil,
 			func() *config {
 				c := newConfig()
-				c.publicKey = `testdata/B06469EE_nopw.pub.asc`
+				c.pgpEmailKeys = []string{`recipient_to@domain.email`, `testdata/B06469EE_nopw.pub.asc`}
 				c.to = []string{"recipient_to@domain.email"}
 				c.cc = []string{"recipient_cc1@domain.email", "recipient_cc2@domain.email"}
 				c.bcc = []string{"recipient_bcc1@domain.email", "recipient_bcc2@domain.email"}
@@ -81,7 +81,48 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		5: {
+		{
+			`mailout {
+				to              recipient_to@domain.email
+				cc              "recipient_cc1@domain.email, recipient_cc2@domain.email"
+				bcc             "recipient_bcc1@domain.email, recipient_bcc2@domain.email"
+				recipient_to@domain.email 	testdata/B06469EE_nopw.pub.asc
+				recipient_cc1@domain.email	https://keybase.io/cyrill/key.asc
+				recipient_cc2@domain.email	testdata/B06469EE_nopw.pub.asc
+				recipient_bcc2@domain.email	testdata/B06469EE_nopw.pub.asc
+			}`,
+			nil,
+			func() *config {
+				c := newConfig()
+				c.pgpEmailKeys = []string{
+					"recipient_to@domain.email", "testdata/B06469EE_nopw.pub.asc",
+					"recipient_cc1@domain.email", "https://keybase.io/cyrill/key.asc",
+					"recipient_cc2@domain.email", "testdata/B06469EE_nopw.pub.asc",
+					"recipient_bcc2@domain.email", "testdata/B06469EE_nopw.pub.asc",
+				}
+				c.to = []string{"recipient_to@domain.email"}
+				c.cc = []string{"recipient_cc1@domain.email", "recipient_cc2@domain.email"}
+				c.bcc = []string{"recipient_bcc1@domain.email", "recipient_bcc2@domain.email"}
+				return c
+			},
+		},
+		{
+			`mailout {
+				to              recipient_to@domain.email
+				recipient_to@domain.email 	testdata/B06469EE_nopw.pub.asc
+				recipient_cc1@domain.email
+			}`,
+			errors.New("Testfile:4 - Parse error: Wrong argument count or unexpected line ending after 'recipient_cc1@domain.email'"),
+			func() *config {
+				c := newConfig()
+				c.pgpEmailKeys = []string{
+					"recipient_to@domain.email", "testdata/B06469EE_nopw.pub.asc",
+				}
+				c.to = []string{"recipient_to@domain.email"}
+				return c
+			},
+		},
+		{
 			`mailout /sendmail {
 				username 	g0ph3r
 				password 	release1.6
@@ -99,7 +140,7 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		6: {
+		{
 			`mailout /sendmail {
 				to	"reci@email.de,"
 			}`,
@@ -114,7 +155,7 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		7: {
+		{
 			`mailout /sendmail {
 				to
 				cc
@@ -131,7 +172,7 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		8: {
+		{
 			`mailout {
 				maillog testdata
 				errorlog testdata
@@ -144,7 +185,7 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		9: {
+		{
 			`mailout {
 				maillog testdata
 			}`,
@@ -155,7 +196,7 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		10: {
+		{
 			`mailout {
 				errorlog testdata
 			}`,
@@ -166,7 +207,7 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		11: {
+		{
 			`mailout {
 				errorlog testdata
 				maillog testdata
@@ -179,7 +220,7 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		12: {
+		{
 			`mailout {
 				publickeyAttachmentFileName "encrypted.asc"
 			}`,
@@ -190,7 +231,7 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		13: {
+		{
 			`mailout {
 				publickeyAttachmentFileName
 			}`,
@@ -201,7 +242,7 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		14: {
+		{
 			`mailout {
 				ratelimit_interval 12h
 				ratelimit_capacity 500
@@ -214,7 +255,7 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		15: {
+		{
 			`mailout {
 				ratelimit_interval
 				ratelimit_capacity 500
@@ -225,7 +266,7 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		16: {
+		{
 			`mailout {
 				ratelimit_interval 6h
 				ratelimit_capacity
@@ -236,7 +277,7 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		17: {
+		{
 			`mailout {
 				ratelimit_interval 12x
 				ratelimit_capacity 500
@@ -248,7 +289,7 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
-		18: {
+		{
 			`mailout {
 				ratelimit_interval 12s
 				ratelimit_capacity 5x
@@ -267,7 +308,7 @@ func TestSetupParse(t *testing.T) {
 		mc, err := parse(c)
 		if test.expectErr != nil {
 			assert.Nil(t, mc, "Index %d", i)
-			assert.EqualError(t, err, test.expectErr.Error(), "Index %d", i)
+			assert.EqualError(t, err, test.expectErr.Error(), "Index %d with config:\n%s", i, test.config)
 			continue
 		}
 		assert.NoError(t, err, "Index %d", i)

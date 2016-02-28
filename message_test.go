@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
-	"time"
 
+	"github.com/SchumacherFM/mailout/maillog"
 	"github.com/mholt/caddy/caddy/setup"
 	"github.com/stretchr/testify/assert"
 )
@@ -21,7 +21,10 @@ func testMessageServer(t *testing.T, caddyFile string, buf *bytes.Buffer) *httpt
 	if err := mc.loadTemplate(); err != nil {
 		t.Fatal(err)
 	}
-	if err := mc.loadPGPKey(); err != nil {
+	if err := mc.loadPGPKeys(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mc.calcMessageCount(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -38,7 +41,7 @@ func testMessageServer(t *testing.T, caddyFile string, buf *bytes.Buffer) *httpt
 
 func testDoPost(t *testing.T, url string, data url.Values) *http.Response {
 	hClient := &http.Client{}
-	hClient.Timeout = time.Millisecond * 10
+	//hClient.Timeout = time.Millisecond
 	resp, err := hClient.PostForm(url, data)
 	if err != nil {
 		t.Fatal(err)
@@ -76,6 +79,7 @@ func TestMessagePlainTextAllFormFields(t *testing.T) {
 	assert.Contains(t, buf.String(), `From: "Ken Thompson" <ken@thompson.email>`)
 	assert.Contains(t, buf.String(), "Subject: Email from Ken Thompson")
 	assert.Contains(t, buf.String(), "Cc: gopher1@domain.email, gopher2@domain.email")
+	//t.Log(buf.String())
 }
 
 func TestMessagePlainTextWithOutFormInputName(t *testing.T) {
@@ -133,7 +137,7 @@ func TestMessageHTML(t *testing.T) {
 	assert.NotContains(t, buf.String(), "Bcc: gopherHTML1@domain.email")
 }
 
-func TestMessagePlainPGP(t *testing.T) {
+func TestMessagePlainPGPSingleKey(t *testing.T) {
 	t.Parallel()
 
 	const caddyFile = `mailout {
@@ -141,7 +145,7 @@ func TestMessagePlainPGP(t *testing.T) {
 				cc              "pgp1@domain.email"
 				subject         "Encrypted contact 🔑"
 				body            testdata/mail_plainTextMessage.txt
-				publickey 		testdata/B06469EE_nopw.pub.asc
+				pgp@domain.email 		testdata/B06469EE_nopw.pub.asc
 			}`
 
 	buf := new(bytes.Buffer)
@@ -156,11 +160,51 @@ func TestMessagePlainPGP(t *testing.T) {
 
 	testDoPost(t, srv.URL, data)
 
-	assert.Len(t, buf.String(), 2254) // whenever you change the template, change also here
+	assert.Len(t, buf.String(), 2708) // whenever you change the template, change also here
 	assert.Contains(t, buf.String(), "Subject: =?UTF-8?q?Encrypted_contact_=F0=9F=94=91?=")
 	assert.Contains(t, buf.String(), "Cc: pgp1@domain.email")
+	assert.Exactly(t, 1, bytes.Count(buf.Bytes(), maillog.MultiMessageSeparator))
+	assert.Contains(t, buf.String(), `This shows the content of a text template.`)
+	//t.Log(buf.String())
+}
+
+func TestMessagePlainPGPMultipleKey(t *testing.T) {
+	t.Parallel()
+
+	const caddyFile = `mailout {
+				to              pgp@domain.email
+				cc              "pgp1@domain.email,  pgp2@domain.email"
+				subject         "Encrypted contact"
+				body            testdata/mail_plainTextMessage.txt
+				pgp@domain.email 		testdata/B06469EE_nopw.pub.asc
+				pgp1@domain.email 		testdata/6AD0EE9E_nopw.pub.asc
+			}`
+
+	buf := new(bytes.Buffer)
+	srv := testMessageServer(t, caddyFile, buf)
+	defer srv.Close()
+
+	data := make(url.Values)
+	data.Set("firstname", "Ken")
+	data.Set("lastname", "Thompson")
+	data.Set("email", "ken@thompson.email")
+	data.Set("name", "Ken Thompson")
+
+	testDoPost(t, srv.URL, data)
+
+	assert.Len(t, buf.String(), 4953) // whenever you change the template, change also here
+	assert.Exactly(t, 3, bytes.Count(buf.Bytes(), []byte("Subject: Encrypted contact")))
+	assert.Exactly(t, 2, bytes.Count(buf.Bytes(), []byte(`Content-Disposition: inline; filename="encrypted.gpg"`)))
+	assert.NotContains(t, buf.String(), "Cc: pgp1@domain.email")
+	assert.Exactly(t, 2, bytes.Count(buf.Bytes(), maillog.MultiMessageSeparator))
+	assert.Contains(t, buf.String(), `This shows the content of a text template.`)
+
+	assert.Contains(t, buf.String(), `To: pgp@domain.email`)
+	assert.Contains(t, buf.String(), `To: pgp1@domain.email`)
+	assert.Contains(t, buf.String(), `Cc: pgp2@domain.email`)
 
 	//t.Log(buf.String())
+
 }
 
 // 0.4.ms per PGP message
@@ -182,7 +226,7 @@ func BenchmarkMessagePlainPGP(b *testing.B) {
 	if err := mc.loadTemplate(); err != nil {
 		b.Fatal(err)
 	}
-	if err := mc.loadPGPKey(); err != nil {
+	if err := mc.loadPGPKeys(); err != nil {
 		b.Fatal(err)
 	}
 

@@ -25,7 +25,7 @@ func Setup(c *setup.Controller) (mw middleware.Middleware, err error) {
 		if err = mc.loadFromEnv(); err != nil {
 			return
 		}
-		if err = mc.loadPGPKey(); err != nil {
+		if err = mc.loadPGPKeys(); err != nil {
 			return
 		}
 		if err = mc.loadTemplate(); err != nil {
@@ -74,11 +74,6 @@ func parse(c *setup.Controller) (mc *config, err error) {
 		for c.NextBlock() {
 			var err error
 			switch c.Val() {
-			case "publickey":
-				if !c.NextArg() {
-					return nil, c.ArgErr()
-				}
-				mc.publicKey = c.Val()
 			case "publickeyAttachmentFileName":
 				if !c.NextArg() {
 					return nil, c.ArgErr()
@@ -177,11 +172,18 @@ func parse(c *setup.Controller) (mc *config, err error) {
 				if err != nil {
 					return nil, err
 				}
-				if rlc > 0 || rlc == -1 { // deactivated use minus 1 ... a hack ... ;-)
+				if rlc > 0 {
 					mc.rateLimitCapacity = rlc
 				}
-				//default:
-				//	println("val", c.Val())
+			default:
+				anyKey := c.Val()
+				if isValidEmail(anyKey) {
+					if !c.NextArg() {
+						return nil, c.ArgErr()
+					}
+					pgpPublicKey := c.Val()
+					mc.pgpEmailKeys = append(mc.pgpEmailKeys, anyKey, pgpPublicKey)
+				}
 			}
 		}
 	}

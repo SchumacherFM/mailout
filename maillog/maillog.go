@@ -10,6 +10,10 @@ import (
 	"time"
 )
 
+// MultiMessageSeparator used in WriteTo function in the message slice type
+// to separate between multiple messages in a log file.
+var MultiMessageSeparator = []byte("\n\n================================================================================\n\n")
+
 // Logger logs emails and errors. If nil, nothing gets logged.
 type Logger struct {
 	hosts []string
