@@ -11,13 +11,15 @@ mailout [endpoint] {
 	maillog         [path/to/logdir]
 	errorlog        [path/to/logdir]
 
-	to              recipient_to@domain.email       
-	cc              ["recipient_cc1@domain.email, recipient_cc2@domain.email"]        
-	bcc             ["recipient_bcc1@domain.email, recipient_bcc2@domain.email"]
+	to              email@address1.tld       
+	cc              ["email@address2.tld, email@addressN.tld"]        
+	bcc             ["email@addressN.tld, email@addressN.tld"]
     subject         "Email from {{.firstname}} {{.lastname}}"
 	body            path/to/tpl.[txt|html]
 
-	[email-address]       [path/to/pgp.pub|ENV:MY_PGP_KEY_PATH|https://keybase.io/cyrill/key.asc]
+	[email@address1.tld]       [path/to/pgp1.pub|ENV:MY_PGP_KEY_PATH_1|https://keybase.io/cyrill1/key.asc]
+	[email@address2.tld]       [path/to/pgp2.pub|ENV:MY_PGP_KEY_PATH_2|https://keybase.io/cyrill2/key.asc]
+	[email@addressN.tld]       [path/to/pgpN.pub|ENV:MY_PGP_KEY_PATH_N|https://keybase.io/cyrillN/key.asc]
 
 	username        "ENV:MY_SMTP_USERNAME|gopher"
 	password        "ENV:MY_SMTP_PASSWORD|g0ph3r"
