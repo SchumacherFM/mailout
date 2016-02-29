@@ -19,10 +19,10 @@ mailout [endpoint] {
 
 	[email-address]       [path/to/pgp.pub|ENV:MY_PGP_KEY_PATH|https://keybase.io/cyrill/key.asc]
 
-	username        "[ENV:MY_SMTP_USERNAME|gopher]"
-	password        "[ENV:MY_SMTP_PASSWORD|g0ph3r]"
-	host            "[ENV:MY_SMTP_HOST|smtp.gmail.com]"
-	port            [ENV:MY_SMTP_PORT|25|465|587]
+	username        "ENV:MY_SMTP_USERNAME|gopher"
+	password        "ENV:MY_SMTP_PASSWORD|g0ph3r"
+	host            "ENV:MY_SMTP_HOST|smtp.gmail.com"
+	port             ENV:MY_SMTP_PORT|25|465|587
 	
 	ratelimit_interval 24h
 	ratelimit_capacity 1000
@@ -31,13 +31,13 @@ mailout [endpoint] {
 
 - endpoint: Can be any path but your POST request must match it. Default path: `/mailout`
 - [email-address]: if provided mails get encrypted. Set a path to a file, an environment variable or an URL to a key on a HTTPS site. Key = email address; value = PGP Key
-- maillog: Specify a directory, which gets created recursively, and emails will be written in here, as a backup. Leaving the maillog setting empty does not log anything. Every sent email is saved into its own file. Strict file permissions apply. 
+- maillog: Specify a directory, which gets created recursively, and emails will be written in there, as a backup. Leaving the maillog setting empty does not log anything. Every sent email is saved into its own file. Strict file permissions apply. 
 - errorlog: Specify a directory, which gets created recursively, and errors gets logged in there. Leaving the errorlog setting empty does not log anything. Strict file permissions apply. 
 - to, cc, bcc: Multiple email addresses must be separated by a colon and within double quotes.
-- subject: Has the same functionality as the body template.
+- subject: Has the same functionality as the body template, but text only.
 - body: Text or HTML template stored on the hard disk of your server. More details below.
-- username, password, host: Self explanatory.
-- port: Plain text on port 25, SSL use port 465, for TLS use port 587. Internally for TLS the host name gets verified with the certificate.
+- username, password, host: Self explanatory, access credentials to the SMTP server.
+- port: Plain text on port 25, SSL uses port 465, for TLS use port 587. Internally for TLS the host name gets verified with the certificate of the SMTP server.
 - ratelimit_interval: the duration in which the capacity can be consumed. A duration string is a possibly signed sequence of decimal numbers, each with optional fraction and a unit suffix, such as "300ms", "1.5h" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h". Default: 24h  
 - ratelimit_capacity: the overall capacity within the interval. Default: 1000
 
@@ -95,12 +95,14 @@ Server response on internal errors:
 500 Internal Server Error
 ```
 
-### HTML form and email template
+### Email template
 
 The rendering engine for the email templates depends on the suffix of the template file name. 
 
 - `.txt`: Plain text template language [https://golang.org/pkg/text/template/](https://golang.org/pkg/text/template/).
 - `.html`: HTML template language [https://golang.org/pkg/html/template/](https://golang.org/pkg/html/template/).
+
+### HTML form
 
 Create a simple HTML form with some JavaScript and AJAX functions.
 
@@ -109,7 +111,7 @@ will be later joined to create the `From:` header of an email.
 
 The following snipped has been extracted from a [Hugo](http://gohugo.io) template.
 
-```
+```html
   <div id="contactThankYou" style="display:hidden;">Thank you for contacting us!</div>
   <form action="#" id="myContactForm" method="POST">
     <div class="row uniform 50%">
@@ -125,7 +127,7 @@ The following snipped has been extracted from a [Hugo](http://gohugo.io) templat
         <textarea name="message" id="message" placeholder="{{ .Site.Params.contact.form.message }}"
                   rows="4" required></textarea>
       </div>
-      <input type="hidden" name="user_agent" value="Will be filled our via JavaScript"/>
+      <input type="hidden" name="user_agent" value="Will be filled out via JavaScript"/>
       <ul class="actions">
         <li><input type="submit" value="{{ .Site.Params.contact.form.submit }}"/></li>
       </ul>
