@@ -50,7 +50,7 @@ func TestServeHTTP_ShouldNotValidateEmailAddress(t *testing.T) {
 	assert.Exactly(t, StatusEmpty, code)
 	assert.Exactly(t, "{\"code\":422,\"error\":\"Invalid email address: \\\"ken\\\\uf8ffthompson.email\\\"\"}\n", w.Body.String())
 	assert.Exactly(t, StatusUnprocessableEntity, w.Code)
-	assert.Exactly(t, HeaderApplicationJSONUTF8, w.HeaderMap.Get(HeaderContentType))
+	assert.Exactly(t, headerApplicationJSONUTF8, w.HeaderMap.Get(headerContentType))
 }
 
 func TestServeHTTP_ShouldNotParseForm(t *testing.T) {
@@ -144,7 +144,7 @@ func TestServeHTTP_RateLimitShouldBeApplied(t *testing.T) {
 		assert.Exactly(t, http.StatusOK, w.Code, "Request %d", i)
 
 		//t.Log("Request",i,"\n")
-		assert.Exactly(t, HeaderApplicationJSONUTF8, w.HeaderMap.Get(HeaderContentType))
+		assert.Exactly(t, headerApplicationJSONUTF8, w.HeaderMap.Get(headerContentType))
 		assert.Len(t, w.HeaderMap, 1)
 	}
 

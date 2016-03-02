@@ -63,7 +63,7 @@ func (bm message) build() messages {
 
 	i := 0
 	// build all encrypted emails
-	for addr, _ := range bm.mc.pgpEmailKeyEntities {
+	for addr := range bm.mc.pgpEmailKeyEntities {
 		msg := msgs[i]
 		msg.SetHeader("To", addr)
 		bm.setFrom(msg)

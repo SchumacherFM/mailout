@@ -10,6 +10,7 @@ import (
 	"github.com/mholt/caddy/middleware"
 )
 
+// Setup used internally by Caddy to set up this middleware
 func Setup(c *setup.Controller) (mw middleware.Middleware, err error) {
 	var mc *config
 	mc, err = parse(c)

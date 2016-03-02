@@ -43,11 +43,11 @@ func mockServerTransport(code int, body string) func() (*httptest.Server, http.R
 		fmt.Fprintln(w, body)
 	}))
 
-	srvUrl, err := url.Parse(server.URL)
+	srvURL, err := url.Parse(server.URL)
 	if err != nil {
 		panic(err)
 	}
-	tr := mockTransport{URL: srvUrl}
+	tr := mockTransport{URL: srvURL}
 
 	return func() (*httptest.Server, http.RoundTripper) { return server, tr }
 }

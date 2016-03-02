@@ -18,8 +18,8 @@ const StatusUnprocessableEntity = 422
 const StatusEmpty = 0
 
 const (
-	HeaderContentType         = "Content-Type"
-	HeaderApplicationJSONUTF8 = "application/json; charset=utf-8"
+	headerContentType         = "Content-Type"
+	headerApplicationJSONUTF8 = "application/json; charset=utf-8"
 )
 
 func newHandler(mc *config, mailPipe chan<- *http.Request) *handler {
@@ -39,6 +39,7 @@ type handler struct {
 	Next    middleware.Handler
 }
 
+// ServeHTTP serves a request
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error) {
 	if r.URL.Path != h.config.endpoint {
 		return h.Next.ServeHTTP(w, r)
@@ -73,14 +74,18 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 	}
 
 	if h.reqPipe != nil {
-		h.reqPipe <- r
+		h.reqPipe <- r // might block if the mail daemon is busy
 	}
 	return h.writeJSON(JSONError{Code: http.StatusOK}, w)
 }
 
+// JSONError defines how an REST JSON looks like.
+// Code 200 and empty Error specifies a successful request
+// Any other Code value s an error.
 type JSONError struct {
 	// Code represents the HTTP Status Code, a work around.
-	Code  int    `json:"code,omitempty"`
+	Code int `json:"code,omitempty"`
+	// Error the underlying error, if there is one.
 	Error string `json:"error,omitempty"`
 }
 
@@ -88,7 +93,7 @@ func (h *handler) writeJSON(je JSONError, w http.ResponseWriter) (int, error) {
 	buf := bufpool.Get()
 	defer bufpool.Put(buf)
 
-	w.Header().Set(HeaderContentType, HeaderApplicationJSONUTF8)
+	w.Header().Set(headerContentType, headerApplicationJSONUTF8)
 
 	// https://github.com/mholt/caddy/issues/637#issuecomment-189599332
 	w.WriteHeader(je.Code)

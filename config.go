@@ -21,13 +21,17 @@ const emailSplitBy = ","
 
 const defaultEndpoint = "/mailout"
 
-// defaultHttpClient net/http default client does not come with a time out set.
-var defaultHttpClient = &http.Client{
+// defaultHTTPClient net/http default client does not come with a time out set so
+// here we go with a timeout.
+var defaultHTTPClient = &http.Client{
 	Timeout: time.Second * 20,
 }
 
 type renderer interface {
-	Execute(wr io.Writer, data interface{}) (err error)
+	// Execute runs the template renderer and parses data (interface{}) into
+	// the parsed unterlying template. The output will be written
+	// to the io.Writer.
+	Execute(io.Writer, interface{}) error
 }
 
 type config struct {
@@ -92,7 +96,7 @@ type config struct {
 func newConfig() *config {
 	return &config{
 		endpoint:          defaultEndpoint,
-		httpClient:        defaultHttpClient,
+		httpClient:        defaultHTTPClient,
 		pgpAttachmentName: "encrypted.gpg",
 		host:              "localhost",
 		port:              1025, // mailhog (github.com/mailhog/MailHog) default port
@@ -131,7 +135,7 @@ func (c *config) loadPGPKeys() error {
 	}
 
 	// remove PGP emails from to,cc and bcc
-	for addr, _ := range c.pgpEmailKeyEntities {
+	for addr := range c.pgpEmailKeyEntities {
 		c.to = deleteEntrySS(c.to, addr)
 		c.cc = deleteEntrySS(c.cc, addr)
 		c.bcc = deleteEntrySS(c.bcc, addr)
@@ -142,10 +146,15 @@ func (c *config) loadPGPKeys() error {
 func (c *config) loadPGPKey(pathToKey string) (ent *openpgp.Entity, err error) {
 	var keyRC io.ReadCloser
 	if strings.Index(pathToKey, "http") == 0 {
-		httpData, err := c.httpClient.Get(pathToKey)
+		var httpData *http.Response
+		httpData, err = c.httpClient.Get(pathToKey)
 		if httpData != nil {
 			keyRC = httpData.Body
-			defer keyRC.Close()
+			defer func() {
+				if err2 := keyRC.Close(); err2 != nil {
+					c.maillog.Errorf("keyRC.Close(): %s", err2)
+				}
+			}()
 		}
 		if err != nil {
 			return nil, fmt.Errorf("Loading of remote public key from URL %q failed:\n%s", pathToKey, err)
@@ -158,12 +167,17 @@ func (c *config) loadPGPKey(pathToKey string) (ent *openpgp.Entity, err error) {
 		if false == fileExists(pathToKey) {
 			return nil, fmt.Errorf("File %q not found", pathToKey)
 		}
-		f, err := os.Open(pathToKey)
+		var f *os.File
+		f, err = os.Open(pathToKey)
 		if err != nil {
 			return nil, fmt.Errorf("File %q not loaded because of error: %s", pathToKey, err)
 		}
 		keyRC = f
-		defer keyRC.Close()
+		defer func() {
+			if err2 := keyRC.Close(); err2 != nil {
+				c.maillog.Errorf("keyRC.Close(): %s", err2)
+			}
+		}()
 	}
 
 	keyList, err := openpgp.ReadArmoredKeyRing(keyRC)

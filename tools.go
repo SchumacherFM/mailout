@@ -5,12 +5,6 @@ import (
 	"regexp"
 )
 
-// isDir returns true if path is a directory
-func isDir(path string) bool {
-	fileInfo, err := os.Stat(path)
-	return fileInfo != nil && fileInfo.IsDir() && err == nil
-}
-
 // fileExists returns true if file exists
 func fileExists(path string) bool {
 	fi, err := os.Stat(path)
