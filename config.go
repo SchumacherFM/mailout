@@ -118,7 +118,7 @@ func (c *config) calcMessageCount() error {
 func (c *config) loadPGPKeys() error {
 
 	if len(c.pgpEmailKeys) == 0 {
-		return nil
+		return c.calcMessageCount()
 	}
 	if l := len(c.pgpEmailKeys); l > 0 && l%2 != 0 {
 		return fmt.Errorf("Imbalanced PGP email addresses and keys: %v", c.pgpEmailKeys)

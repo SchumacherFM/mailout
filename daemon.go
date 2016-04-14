@@ -88,7 +88,7 @@ func goMailDaemon(mc *config, rChan <-chan *http.Request) {
 				}
 				open = false
 			}
-		//default: // http://www.jtolds.com/writing/2016/03/go-channels-are-bad-and-you-should-feel-bad/
+			//default: // http://www.jtolds.com/writing/2016/03/go-channels-are-bad-and-you-should-feel-bad/
 		}
 	}
 }

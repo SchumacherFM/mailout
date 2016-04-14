@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func testMessageServer(t *testing.T, caddyFile string, buf *bytes.Buffer) *httptest.Server {
+func testMessageServer(t *testing.T, caddyFile string, buf *bytes.Buffer, expectedMsgCount int) *httptest.Server {
 	c := setup.NewTestController(caddyFile)
 	mc, err := parse(c)
 	if err != nil {
@@ -24,9 +24,7 @@ func testMessageServer(t *testing.T, caddyFile string, buf *bytes.Buffer) *httpt
 	if err := mc.loadPGPKeys(); err != nil {
 		t.Fatal(err)
 	}
-	if err := mc.calcMessageCount(); err != nil {
-		t.Fatal(err)
-	}
+	assert.Exactly(t, expectedMsgCount, mc.messageCount, "\nCaddyFile %s\n", caddyFile)
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
@@ -63,7 +61,7 @@ func TestMessagePlainTextAllFormFields(t *testing.T) {
 			}`
 
 	buf := new(bytes.Buffer)
-	srv := testMessageServer(t, caddyFile, buf)
+	srv := testMessageServer(t, caddyFile, buf, 1)
 	defer srv.Close()
 
 	data := make(url.Values)
@@ -92,7 +90,7 @@ func TestMessagePlainTextWithOutFormInputName(t *testing.T) {
 			}`
 
 	buf := new(bytes.Buffer)
-	srv := testMessageServer(t, caddyFile, buf)
+	srv := testMessageServer(t, caddyFile, buf, 1)
 	defer srv.Close()
 
 	data := make(url.Values)
@@ -119,7 +117,7 @@ func TestMessageHTML(t *testing.T) {
 			}`
 
 	buf := new(bytes.Buffer)
-	srv := testMessageServer(t, caddyFile, buf)
+	srv := testMessageServer(t, caddyFile, buf, 1)
 	defer srv.Close()
 
 	data := make(url.Values)
@@ -149,7 +147,7 @@ func TestMessagePlainPGPSingleKey(t *testing.T) {
 			}`
 
 	buf := new(bytes.Buffer)
-	srv := testMessageServer(t, caddyFile, buf)
+	srv := testMessageServer(t, caddyFile, buf, 2)
 	defer srv.Close()
 
 	data := make(url.Values)
@@ -160,7 +158,7 @@ func TestMessagePlainPGPSingleKey(t *testing.T) {
 
 	testDoPost(t, srv.URL, data)
 
-	assert.Len(t, buf.String(), 2708) // whenever you change the template, change also here
+	assert.Len(t, buf.String(), 2710) // whenever you change the template, change also here
 	assert.Contains(t, buf.String(), "Subject: =?UTF-8?q?Encrypted_contact_=F0=9F=94=91?=")
 	assert.Contains(t, buf.String(), "Cc: pgp1@domain.email")
 	assert.Exactly(t, 1, bytes.Count(buf.Bytes(), maillog.MultiMessageSeparator))
@@ -181,7 +179,7 @@ func TestMessagePlainPGPMultipleKey(t *testing.T) {
 			}`
 
 	buf := new(bytes.Buffer)
-	srv := testMessageServer(t, caddyFile, buf)
+	srv := testMessageServer(t, caddyFile, buf, 3)
 	defer srv.Close()
 
 	data := make(url.Values)
@@ -192,7 +190,7 @@ func TestMessagePlainPGPMultipleKey(t *testing.T) {
 
 	testDoPost(t, srv.URL, data)
 
-	assert.Len(t, buf.String(), 4953) // whenever you change the template, change also here
+	assert.Len(t, buf.String(), 4957) // whenever you change the template, change also here
 	assert.Exactly(t, 3, bytes.Count(buf.Bytes(), []byte("Subject: Encrypted contact")))
 	assert.Exactly(t, 2, bytes.Count(buf.Bytes(), []byte(`Content-Disposition: inline; filename="encrypted.gpg"`)))
 	assert.NotContains(t, buf.String(), "Cc: pgp1@domain.email")

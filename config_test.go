@@ -59,6 +59,7 @@ func TestConfigLoadPGPKeyHTTPS(t *testing.T) {
 		expectErr  error
 		keyNil     bool
 		serverMock func() (*httptest.Server, http.RoundTripper)
+		msgCount   int
 	}{
 		{
 			`mailout {
@@ -67,6 +68,7 @@ func TestConfigLoadPGPKeyHTTPS(t *testing.T) {
 			errors.New("Cannot load PGP key for email address \"go@ogle.com\" with error: Loading remote public key failed from URL \"https://keybase.io/cyrill/keyNOTFOUND.asc\". StatusCode have 404 StatusCode want 200"),
 			true,
 			mockServerTransport(http.StatusNotFound, "Not found"),
+			0,
 		},
 		{
 			`mailout {
@@ -75,6 +77,7 @@ func TestConfigLoadPGPKeyHTTPS(t *testing.T) {
 			errors.New("Cannot load PGP key for email address \"go@ogle.com\" with error: Cannot read public key \"https://keybase.io/cyrill/B06469EE_nopw.pub.asc\": openpgp: invalid argument: no armored data found"),
 			true,
 			mockServerTransport(http.StatusOK, "I'm hacking ..."),
+			0,
 		},
 		{
 			`mailout {
@@ -83,6 +86,7 @@ func TestConfigLoadPGPKeyHTTPS(t *testing.T) {
 			nil,
 			false,
 			mockServerTransport(http.StatusOK, testPubKey),
+			1,
 		},
 	}
 	for i, test := range tests {
@@ -99,6 +103,7 @@ func TestConfigLoadPGPKeyHTTPS(t *testing.T) {
 		mc.httpClient.Transport = trsp
 
 		err = mc.loadPGPKeys()
+		assert.Exactly(t, test.msgCount, mc.messageCount, "Index %d", i)
 		srv.Close()
 		if test.keyNil && test.expectErr == nil {
 			assert.NoError(t, err, "Index %d", i)
@@ -256,6 +261,7 @@ func TestLoadFromEnv(t *testing.T) {
 	wantConfig.host = "127.0.0.4"
 	wantConfig.portRaw = "1030"
 	wantConfig.port = 1030
+	wantConfig.messageCount = 0
 
 	c := setup.NewTestController(testCaddyConfig)
 	mc, err := parse(c)
