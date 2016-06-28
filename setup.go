@@ -6,40 +6,46 @@ import (
 	"time"
 
 	"github.com/SchumacherFM/mailout/maillog"
-	"github.com/mholt/caddy/caddy/setup"
-	"github.com/mholt/caddy/middleware"
+	"github.com/mholt/caddy/"
+	"github.com/mholt/caddy/caddyhttp/httpserver"
 )
 
+func init() {
+	caddy.RegisterPlugin("mailout", caddy.Plugin{
+		ServerType: "http",
+		Action:     Setup,
+	})
+}
+
 // Setup used internally by Caddy to set up this middleware
-func Setup(c *setup.Controller) (mw middleware.Middleware, err error) {
-	var mc *config
-	mc, err = parse(c)
+func Setup(c *caddy.Controller) error {
+	mc, err := parse(c)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if c.ServerBlockHostIndex == 0 {
 		// only run when the first hostname has been loaded.
 		if mc.maillog, err = mc.maillog.Init(c.ServerBlockHosts...); err != nil {
-			return
+			return err
 		}
 		if err = mc.loadFromEnv(); err != nil {
-			return
+			return err
 		}
 		if err = mc.loadPGPKeys(); err != nil {
-			return
+			return err
 		}
 		if err = mc.loadTemplate(); err != nil {
-			return
+			return err
 		}
 		if err = mc.pingSMTP(); err != nil {
-			return
+			return err
 		}
 
 		c.ServerBlockStorage = newHandler(mc, startMailDaemon(mc))
 	}
 
-	c.Shutdown = append(c.Shutdown, func() error {
+	c.OnShutdown(func() error {
 		if moh, ok := c.ServerBlockStorage.(*handler); ok {
 			if moh.reqPipe != nil {
 				close(moh.reqPipe)
@@ -50,17 +56,16 @@ func Setup(c *setup.Controller) (mw middleware.Middleware, err error) {
 	})
 
 	if moh, ok := c.ServerBlockStorage.(*handler); ok { // moh = mailOutHandler ;-)
-		mw = func(next middleware.Handler) middleware.Handler {
+		httpserver.GetConfig(c).AddMiddleware(func(next httpserver.Handler) httpserver.Handler {
 			moh.Next = next
 			return moh
-		}
-		return
+		})
+		return nil
 	}
-	err = errors.New("mailout: Could not create the middleware")
-	return
+	return errors.New("mailout: Could not create the middleware")
 }
 
-func parse(c *setup.Controller) (mc *config, err error) {
+func parse(c *caddy.Controller) (mc *config, err error) {
 	// This parses the following config blocks
 	mc = newConfig()
 
