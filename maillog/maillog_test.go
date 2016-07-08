@@ -12,7 +12,7 @@ import (
 )
 
 func TestNewEmpty(t *testing.T) {
-	t.Parallel()
+
 	l, err := maillog.New("", "").Init()
 	assert.NotNil(t, l)
 	assert.Nil(t, err)
@@ -24,7 +24,7 @@ func TestNewEmpty(t *testing.T) {
 }
 
 func TestNewFail(t *testing.T) {
-	t.Parallel()
+
 	testDir := path.Join(string(os.PathSeparator), "testdata") // try to create dir in root
 	l, err := maillog.New(testDir, testDir).Init()
 	assert.NotNil(t, l)
@@ -32,7 +32,6 @@ func TestNewFail(t *testing.T) {
 }
 
 func TestNewErrorfValid(t *testing.T) {
-	t.Parallel()
 
 	testDir := path.Join(".", "testdata", time.Now().String())
 	defer func() {
@@ -56,7 +55,6 @@ func TestNewErrorfValid(t *testing.T) {
 }
 
 func TestNewMailWriteValid(t *testing.T) {
-	t.Parallel()
 
 	testDir := path.Join(".", "testdata", time.Now().String())
 	defer func() {

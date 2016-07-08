@@ -7,7 +7,7 @@ import (
 
 	"github.com/SchumacherFM/mailout/bufpool"
 	"github.com/juju/ratelimit"
-	"github.com/mholt/caddy/middleware"
+	"github.com/mholt/caddy/caddyhttp/httpserver"
 )
 
 // StatusUnprocessableEntity gets returned whenever parsing of the form fails.
@@ -36,7 +36,7 @@ type handler struct {
 	// reqPipe send request to somewhere else. can be nil for testing.
 	reqPipe chan<- *http.Request
 	config  *config
-	Next    middleware.Handler
+	Next    httpserver.Handler
 }
 
 // ServeHTTP serves a request

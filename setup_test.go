@@ -6,12 +6,12 @@ import (
 
 	"time"
 
-	"github.com/mholt/caddy/caddy/setup"
+	"github.com/mholt/caddy"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSetupParse(t *testing.T) {
-	t.Parallel()
+
 	tests := []struct {
 		config     string
 		expectErr  error
@@ -303,8 +303,7 @@ func TestSetupParse(t *testing.T) {
 		},
 	}
 	for i, test := range tests {
-
-		c := setup.NewTestController(test.config)
+		c := caddy.NewTestController("http", test.config)
 		mc, err := parse(c)
 		if test.expectErr != nil {
 			assert.Nil(t, mc, "Index %d", i)

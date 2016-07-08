@@ -7,7 +7,7 @@ import (
 )
 
 func TestIsValidEmail(t *testing.T) {
-	t.Parallel()
+
 	tests := []struct {
 		have string
 		want bool

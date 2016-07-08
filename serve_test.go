@@ -7,26 +7,25 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mholt/caddy/caddy/setup"
-	"github.com/mholt/caddy/middleware"
+	"github.com/mholt/caddy"
+	"github.com/mholt/caddy/caddyhttp/httpserver"
 	"github.com/stretchr/testify/assert"
 )
 
 func newTestHandler(t *testing.T, caddyFile string) *handler {
-	c := setup.NewTestController(caddyFile)
+	c := caddy.NewTestController("http", caddyFile)
 	mc, err := parse(c)
 	if err != nil {
 		t.Fatal(err)
 	}
 	h := newHandler(mc, nil)
-	h.Next = middleware.HandlerFunc(func(w http.ResponseWriter, r *http.Request) (int, error) {
+	h.Next = httpserver.HandlerFunc(func(w http.ResponseWriter, r *http.Request) (int, error) {
 		return http.StatusTeapot, nil
 	})
 	return h
 }
 
 func TestServeHTTP_ShouldNotValidateEmailAddress(t *testing.T) {
-	t.Parallel()
 
 	h := newTestHandler(t, `mailout`)
 
@@ -54,7 +53,6 @@ func TestServeHTTP_ShouldNotValidateEmailAddress(t *testing.T) {
 }
 
 func TestServeHTTP_ShouldNotParseForm(t *testing.T) {
-	t.Parallel()
 
 	h := newTestHandler(t, `mailout {
 		ratelimit_interval 3s
@@ -73,7 +71,6 @@ func TestServeHTTP_ShouldNotParseForm(t *testing.T) {
 }
 
 func TestServeHTTP_ShouldNotMatchPOST(t *testing.T) {
-	t.Parallel()
 
 	h := newTestHandler(t, `mailout {
 		ratelimit_interval 3s
@@ -94,7 +91,6 @@ func TestServeHTTP_ShouldNotMatchPOST(t *testing.T) {
 }
 
 func TestServeHTTP_ShouldNotMatchEndpoint(t *testing.T) {
-	t.Parallel()
 
 	h := newTestHandler(t, `mailout /hiddenMailService {
 		ratelimit_interval 3s
@@ -115,7 +111,6 @@ func TestServeHTTP_ShouldNotMatchEndpoint(t *testing.T) {
 }
 
 func TestServeHTTP_RateLimitShouldBeApplied(t *testing.T) {
-	t.Parallel()
 
 	h := newTestHandler(t, `mailout {
 		ratelimit_interval 100ms

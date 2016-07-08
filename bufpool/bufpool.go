@@ -18,7 +18,7 @@ var bufferPool = &sync.Pool{
 }
 
 // Get returns a buffer from the pool.
-func Get() (buf *bytes.Buffer) {
+func Get() *bytes.Buffer {
 	return bufferPool.Get().(*bytes.Buffer)
 }
 

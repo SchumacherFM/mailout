@@ -6,13 +6,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path"
 	"testing"
 
-	"path"
-
-	"os"
-
-	"github.com/mholt/caddy/caddy/setup"
+	"github.com/mholt/caddy"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -53,7 +51,7 @@ func mockServerTransport(code int, body string) func() (*httptest.Server, http.R
 }
 
 func TestConfigLoadPGPKeyHTTPS(t *testing.T) {
-	t.Parallel()
+
 	tests := []struct {
 		config     string
 		expectErr  error
@@ -93,7 +91,7 @@ func TestConfigLoadPGPKeyHTTPS(t *testing.T) {
 
 		srv, trsp := test.serverMock()
 
-		c := setup.NewTestController(test.config)
+		c := caddy.NewTestController("http", test.config)
 		mc, err := parse(c)
 		if err != nil {
 			srv.Close()
@@ -124,7 +122,7 @@ func TestConfigLoadPGPKeyHTTPS(t *testing.T) {
 }
 
 func TestConfigLoadPGPKeyHDD(t *testing.T) {
-	t.Parallel()
+
 	tests := []struct {
 		config    string
 		expectErr error
@@ -159,7 +157,7 @@ func TestConfigLoadPGPKeyHDD(t *testing.T) {
 	}
 	for i, test := range tests {
 
-		c := setup.NewTestController(test.config)
+		c := caddy.NewTestController("http", test.config)
 		mc, err := parse(c)
 		if err != nil {
 			t.Fatal("Index", i, "Error:", err)
@@ -239,7 +237,6 @@ V4sIaARfoWRiSvBACooywFQwjpbuPIc=
 `
 
 func TestLoadFromEnv(t *testing.T) {
-	t.Parallel()
 
 	const testCaddyConfig = `mailout {
 	pgpmail@domain.host		ENV:CADDY_MAILOUT_KEY
@@ -263,7 +260,7 @@ func TestLoadFromEnv(t *testing.T) {
 	wantConfig.port = 1030
 	wantConfig.messageCount = 0
 
-	c := setup.NewTestController(testCaddyConfig)
+	c := caddy.NewTestController("http", testCaddyConfig)
 	mc, err := parse(c)
 	if err != nil {
 		t.Fatal(err)
@@ -275,7 +272,7 @@ func TestLoadFromEnv(t *testing.T) {
 }
 
 func TestLoadTemplate(t *testing.T) {
-	t.Parallel()
+
 	tests := []struct {
 		caddyfile string
 		wantErr   error
@@ -306,7 +303,7 @@ func TestLoadTemplate(t *testing.T) {
 		},
 	}
 	for i, test := range tests {
-		c := setup.NewTestController(test.caddyfile)
+		c := caddy.NewTestController("http", test.caddyfile)
 		mc, err := parse(c)
 		if err != nil {
 			t.Fatal(err)
@@ -325,7 +322,7 @@ func TestLoadTemplate(t *testing.T) {
 }
 
 func TestPingSMTP_OK(t *testing.T) {
-	t.Parallel()
+
 	if os.Getenv("MAILOUT_MAILCATCHER") == "" {
 		t.Skip("Please set env variable MAILOUT_MAILCATCHER to test pingSMTP on your local machine.")
 	}
@@ -335,7 +332,7 @@ func TestPingSMTP_OK(t *testing.T) {
 }
 
 func TestPingSMTP_Fail(t *testing.T) {
-	t.Parallel()
+
 	if os.Getenv("MAILOUT_MAILCATCHER") == "" {
 		t.Skip("Please set env variable MAILOUT_MAILCATCHER to test pingSMTP on your local machine.")
 	}

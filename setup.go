@@ -2,31 +2,32 @@ package mailout
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/SchumacherFM/mailout/maillog"
-	"github.com/mholt/caddy/"
+	"github.com/mholt/caddy"
 	"github.com/mholt/caddy/caddyhttp/httpserver"
 )
 
 func init() {
 	caddy.RegisterPlugin("mailout", caddy.Plugin{
 		ServerType: "http",
-		Action:     Setup,
+		Action:     setup,
 	})
 }
 
-// Setup used internally by Caddy to set up this middleware
-func Setup(c *caddy.Controller) error {
+// setup used internally by Caddy to set up this middleware
+func setup(c *caddy.Controller) error {
 	mc, err := parse(c)
 	if err != nil {
 		return err
 	}
 
-	if c.ServerBlockHostIndex == 0 {
+	if c.ServerBlockKeyIndex == 0 {
 		// only run when the first hostname has been loaded.
-		if mc.maillog, err = mc.maillog.Init(c.ServerBlockHosts...); err != nil {
+		if mc.maillog, err = mc.maillog.Init(c.ServerBlockKeys...); err != nil {
 			return err
 		}
 		if err = mc.loadFromEnv(); err != nil {
@@ -55,6 +56,8 @@ func Setup(c *caddy.Controller) error {
 		return nil
 	})
 
+	fmt.Printf("%#v\n\n", c)
+
 	if moh, ok := c.ServerBlockStorage.(*handler); ok { // moh = mailOutHandler ;-)
 		httpserver.GetConfig(c).AddMiddleware(func(next httpserver.Handler) httpserver.Handler {
 			moh.Next = next
@@ -62,10 +65,10 @@ func Setup(c *caddy.Controller) error {
 		})
 		return nil
 	}
-	return errors.New("mailout: Could not create the middleware")
+	return errors.New("[mailout] Could not create the middleware handler")
 }
 
-func parse(c *caddy.Controller) (mc *config, err error) {
+func parse(c *caddy.Controller) (mc *config, _ error) {
 	// This parses the following config blocks
 	mc = newConfig()
 

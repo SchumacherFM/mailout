@@ -1,6 +1,8 @@
-# mailout - CaddyServer SMTP Client
+# mailout - CaddyServer SMTP Client with PGP
 
 Post form data from a website to this route and receive the data as nicely formatted email.
+
+Supports Caddy >= v0.9
 
 Read more: [https://cyrillschumacher.com/projects/2016-02-26-mailout-caddyserver-email-smtp/](https://cyrillschumacher.com/projects/2016-02-26-mailout-caddyserver-email-smtp/)
 

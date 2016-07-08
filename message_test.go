@@ -8,12 +8,12 @@ import (
 	"testing"
 
 	"github.com/SchumacherFM/mailout/maillog"
-	"github.com/mholt/caddy/caddy/setup"
+	"github.com/mholt/caddy"
 	"github.com/stretchr/testify/assert"
 )
 
 func testMessageServer(t *testing.T, caddyFile string, buf *bytes.Buffer, expectedMsgCount int) *httptest.Server {
-	c := setup.NewTestController(caddyFile)
+	c := caddy.NewTestController("http", caddyFile)
 	mc, err := parse(c)
 	if err != nil {
 		t.Fatal(err)
@@ -51,7 +51,6 @@ func testDoPost(t *testing.T, url string, data url.Values) *http.Response {
 }
 
 func TestMessagePlainTextAllFormFields(t *testing.T) {
-	t.Parallel()
 
 	const caddyFile = `mailout {
 				to              gopher@domain.email
@@ -81,7 +80,6 @@ func TestMessagePlainTextAllFormFields(t *testing.T) {
 }
 
 func TestMessagePlainTextWithOutFormInputName(t *testing.T) {
-	t.Parallel()
 
 	const caddyFile = `mailout {
 				to              gopher@domain.email
@@ -107,7 +105,6 @@ func TestMessagePlainTextWithOutFormInputName(t *testing.T) {
 }
 
 func TestMessageHTML(t *testing.T) {
-	t.Parallel()
 
 	const caddyFile = `mailout {
 				to              gopherHTML@domain.email
@@ -136,7 +133,6 @@ func TestMessageHTML(t *testing.T) {
 }
 
 func TestMessagePlainPGPSingleKey(t *testing.T) {
-	t.Parallel()
 
 	const caddyFile = `mailout {
 				to              pgp@domain.email
@@ -167,7 +163,6 @@ func TestMessagePlainPGPSingleKey(t *testing.T) {
 }
 
 func TestMessagePlainPGPMultipleKey(t *testing.T) {
-	t.Parallel()
 
 	const caddyFile = `mailout {
 				to              pgp@domain.email
@@ -216,7 +211,7 @@ func BenchmarkMessagePlainPGP(b *testing.B) {
 				publickey 		testdata/B06469EE_nopw.pub.asc
 			}`
 
-	c := setup.NewTestController(caddyFile)
+	c := caddy.NewTestController("http", caddyFile)
 	mc, err := parse(c)
 	if err != nil {
 		b.Fatal(err)
