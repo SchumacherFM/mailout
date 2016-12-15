@@ -63,7 +63,7 @@ func TestConfigLoadPGPKeyHTTPS(t *testing.T) {
 			`mailout {
 				go@ogle.com https://keybase.io/cyrill/keyNOTFOUND.asc
 			}`,
-			errors.New("Cannot load PGP key for email address \"go@ogle.com\" with error: Loading remote public key failed from URL \"https://keybase.io/cyrill/keyNOTFOUND.asc\". StatusCode have 404 StatusCode want 200"),
+			errors.New("[mailout] Cannot load PGP key for email address \"go@ogle.com\" with error: [mailout] Loading remote public key failed from URL \"https://keybase.io/cyrill/keyNOTFOUND.asc\". StatusCode have 404 StatusCode want 200"),
 			true,
 			mockServerTransport(http.StatusNotFound, "Not found"),
 			0,
@@ -72,7 +72,7 @@ func TestConfigLoadPGPKeyHTTPS(t *testing.T) {
 			`mailout {
 				go@ogle.com https://keybase.io/cyrill/B06469EE_nopw.pub.asc
 			}`,
-			errors.New("Cannot load PGP key for email address \"go@ogle.com\" with error: Cannot read public key \"https://keybase.io/cyrill/B06469EE_nopw.pub.asc\": openpgp: invalid argument: no armored data found"),
+			errors.New("[mailout] Cannot load PGP key for email address \"go@ogle.com\" with error: [mailout] Cannot read public key \"https://keybase.io/cyrill/B06469EE_nopw.pub.asc\": openpgp: invalid argument: no armored data found"),
 			true,
 			mockServerTransport(http.StatusOK, "I'm hacking ..."),
 			0,
@@ -144,14 +144,14 @@ func TestConfigLoadPGPKeyHDD(t *testing.T) {
 			`mailout {
 				go@ogle.com testdata/B06469EE_nopw.priv.asc
 			}`,
-			errors.New("Cannot load PGP key for email address \"go@ogle.com\" with error: PrivateKey found. Not allowed. Please remove it from resouce: \"testdata/B06469EE_nopw.priv.asc\""),
+			errors.New("[mailout] Cannot load PGP key for email address \"go@ogle.com\" with error: [mailout] PrivateKey found. Not allowed. Please remove it from resouce: \"testdata/B06469EE_nopw.priv.asc\""),
 			true,
 		},
 		{
 			`mailout {
 				go@ogle.com xhttp://keybase.io/cyrill/key.asc
 			}`,
-			errors.New("Cannot load PGP key for email address \"go@ogle.com\" with error: File \"xhttp://keybase.io/cyrill/key.asc\" not found"),
+			errors.New("[mailout] Cannot load PGP key for email address \"go@ogle.com\" with error: File \"xhttp://keybase.io/cyrill/key.asc\" not found"),
 			true,
 		},
 	}
@@ -281,13 +281,13 @@ func TestLoadTemplate(t *testing.T) {
 			`mailout {
 				body            testdata/mail_tpl_NOTFOUND.html
 			}`,
-			errors.New("File \"testdata/mail_tpl_NOTFOUND.html\" not found"),
+			errors.New("[mailout] File \"testdata/mail_tpl_NOTFOUND.html\" not found"),
 		},
 		{
 			`mailout {
 				body            testdata/mail_tpl.phtml
 			}`,
-			errors.New("Incorrect file extension. Neither .txt nor .html: \"testdata/mail_tpl.phtml\""),
+			errors.New("[mailout] Incorrect file extension. Neither .txt nor .html: \"testdata/mail_tpl.phtml\""),
 		},
 		{
 			`mailout {

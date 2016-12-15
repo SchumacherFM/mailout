@@ -3,7 +3,6 @@ package mailout
 import (
 	"errors"
 	"testing"
-
 	"time"
 
 	"github.com/mholt/caddy"
@@ -81,6 +80,42 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
+		// <NOT_IMPLEMENTED>
+		// You cannot define two endpoints for one host. this feature needs a total refactoring.
+		// therefore the /sales endpoint gets overwritten by the /repairs endpoint.
+		{
+			`mailout /sales {
+				salesteam@domain.email testdata/B06469EE_nopw.pub.asc
+				to              salesteam@domain.email
+				subject         "Sales Email from {{.firstname}} {{.lastname}}"
+				body            testdata/mail_tpl.html
+				host            127.0.0.1
+				port            25
+			}
+			mailout /repairs {
+				repairteam@domain.email testdata/B06469EE_nopw.pub.asc
+				to              repairteam@domain.email
+				subject         "Repair Email from {{.firstname}} {{.lastname}}"
+				body            testdata/mail_tpl.html
+				host            127.0.0.1
+				port            25
+			}
+			`,
+			nil,
+			func() *config {
+				c := newConfig()
+				c.endpoint = "/repairs"
+				c.pgpEmailKeys = []string{"salesteam@domain.email", "testdata/B06469EE_nopw.pub.asc", "repairteam@domain.email", "testdata/B06469EE_nopw.pub.asc"}
+				c.to = []string{"repairteam@domain.email"}
+				c.subject = `Repair Email from {{.firstname}} {{.lastname}}`
+				c.body = `testdata/mail_tpl.html`
+				c.host = "127.0.0.1"
+				c.portRaw = "25"
+				return c
+			},
+		},
+		// </NOT_IMPLEMENTED>
+
 		{
 			`mailout {
 				to              recipient_to@domain.email
@@ -144,7 +179,7 @@ func TestSetupParse(t *testing.T) {
 			`mailout /sendmail {
 				to	"reci@email.de,"
 			}`,
-			errors.New("Incorrect Email address found in: \"reci@email.de,\""),
+			errors.New("[mailout] Incorrect Email address found in: \"reci@email.de,\""),
 			func() *config {
 				c := newConfig()
 				c.endpoint = defaultEndpoint

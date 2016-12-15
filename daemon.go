@@ -21,7 +21,7 @@ func startMailDaemon(mc *config) chan<- *http.Request {
 func goMailDaemonRecoverable(mc *config, rChan <-chan *http.Request) {
 	defer func() {
 		if r := recover(); r != nil {
-			mc.maillog.Errorf("Catching panic %#v and restarting daemon ...", r)
+			mc.maillog.Errorf("[mailout] Catching panic %#v and restarting daemon ...", r)
 			go goMailDaemonRecoverable(mc, rChan)
 		}
 	}()

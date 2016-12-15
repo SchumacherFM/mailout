@@ -121,7 +121,7 @@ func (c *config) loadPGPKeys() error {
 		return c.calcMessageCount()
 	}
 	if l := len(c.pgpEmailKeys); l > 0 && l%2 != 0 {
-		return fmt.Errorf("Imbalanced PGP email addresses and keys: %v", c.pgpEmailKeys)
+		return fmt.Errorf("[mailout] Imbalanced PGP email addresses and keys: %v", c.pgpEmailKeys)
 	}
 
 	c.pgpEmailKeyEntities = make(map[string]*openpgp.Entity)
@@ -129,7 +129,7 @@ func (c *config) loadPGPKeys() error {
 	for i := 0; i < len(c.pgpEmailKeys); i = i + 2 {
 		pubKey, err := c.loadPGPKey(c.pgpEmailKeys[i+1])
 		if err != nil {
-			return fmt.Errorf("Cannot load PGP key for email address %q with error: %s", c.pgpEmailKeys[i], err)
+			return fmt.Errorf("[mailout] Cannot load PGP key for email address %q with error: %s", c.pgpEmailKeys[i], err)
 		}
 		c.pgpEmailKeyEntities[c.pgpEmailKeys[i]] = pubKey
 	}
@@ -157,10 +157,10 @@ func (c *config) loadPGPKey(pathToKey string) (ent *openpgp.Entity, err error) {
 			}()
 		}
 		if err != nil {
-			return nil, fmt.Errorf("Loading of remote public key from URL %q failed:\n%s", pathToKey, err)
+			return nil, fmt.Errorf("[mailout] Loading of remote public key from URL %q failed:\n%s", pathToKey, err)
 		}
 		if httpData.StatusCode != 200 {
-			return nil, fmt.Errorf("Loading remote public key failed from URL %q. StatusCode have %d StatusCode want %d", pathToKey, httpData.StatusCode, 200)
+			return nil, fmt.Errorf("[mailout] Loading remote public key failed from URL %q. StatusCode have %d StatusCode want %d", pathToKey, httpData.StatusCode, 200)
 		}
 
 	} else {
@@ -170,25 +170,25 @@ func (c *config) loadPGPKey(pathToKey string) (ent *openpgp.Entity, err error) {
 		var f *os.File
 		f, err = os.Open(pathToKey)
 		if err != nil {
-			return nil, fmt.Errorf("File %q not loaded because of error: %s", pathToKey, err)
+			return nil, fmt.Errorf("[mailout] File %q not loaded because of error: %s", pathToKey, err)
 		}
 		keyRC = f
 		defer func() {
 			if err2 := keyRC.Close(); err2 != nil {
-				c.maillog.Errorf("keyRC.Close(): %s", err2)
+				c.maillog.Errorf("[mailout] keyRC.Close(): %s", err2)
 			}
 		}()
 	}
 
 	keyList, err := openpgp.ReadArmoredKeyRing(keyRC)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot read public key %q: %s", pathToKey, err)
+		return nil, fmt.Errorf("[mailout] Cannot read public key %q: %s", pathToKey, err)
 	}
 	ent = keyList[0]
 
 	if ent.PrivateKey != nil {
 		ent = nil
-		err = fmt.Errorf("PrivateKey found. Not allowed. Please remove it from resouce: %q", pathToKey)
+		err = fmt.Errorf("[mailout] PrivateKey found. Not allowed. Please remove it from resouce: %q", pathToKey)
 	}
 	return
 }
@@ -219,7 +219,7 @@ func (c *config) pingSMTP() error {
 
 func (c *config) loadTemplate() (err error) {
 	if false == fileExists(c.body) {
-		return fmt.Errorf("File %q not found", c.body)
+		return fmt.Errorf("[mailout] File %q not found", c.body)
 	}
 
 	switch filepath.Ext(c.body) {
@@ -231,7 +231,7 @@ func (c *config) loadTemplate() (err error) {
 	}
 
 	if c.bodyTpl == nil && err == nil {
-		return fmt.Errorf("Incorrect file extension. Neither .txt nor .html: %q", c.body)
+		return fmt.Errorf("[mailout] Incorrect file extension. Neither .txt nor .html: %q", c.body)
 	}
 
 	c.subjectTpl, err = ttpl.New("").Parse(c.subject)
@@ -251,7 +251,7 @@ func splitEmailAddresses(s string) ([]string, error) {
 	for i, val := range ret {
 		ret[i] = strings.TrimSpace(val)
 		if false == isValidEmail(ret[i]) {
-			return nil, fmt.Errorf("Incorrect Email address found in: %q", s)
+			return nil, fmt.Errorf("[mailout] Incorrect Email address found in: %q", s)
 		}
 	}
 	return ret, nil
