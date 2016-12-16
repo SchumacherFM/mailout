@@ -1,6 +1,8 @@
 package maillog_test
 
 import (
+	"bytes"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -31,7 +33,7 @@ func TestNewFail(t *testing.T) {
 	assert.EqualError(t, err, "Cannot create directory \"/testdata\" because of: mkdir /testdata: permission denied")
 }
 
-func TestNewErrorfValid(t *testing.T) {
+func TestLogger_ErrDir_File(t *testing.T) {
 
 	testDir := path.Join(".", "testdata", time.Now().String())
 	defer func() {
@@ -54,7 +56,7 @@ func TestNewErrorfValid(t *testing.T) {
 	assert.Contains(t, string(logContent), testData)
 }
 
-func TestNewMailWriteValid(t *testing.T) {
+func TestLogger_MailDir_File(t *testing.T) {
 
 	testDir := path.Join(".", "testdata", time.Now().String())
 	defer func() {
@@ -80,4 +82,124 @@ func TestNewMailWriteValid(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert.Exactly(t, len(testData), n)
+}
+
+func TestLogger_MailDir_Stderr(t *testing.T) {
+	orgStdErr := os.Stderr
+	defer func() {
+		os.Stderr = orgStdErr
+	}()
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stderr = pw
+	outC := make(chan string)
+	// copy the output in a separate goroutine so printing can't block indefinitely
+	go func() {
+		var buf bytes.Buffer
+		if _, err := io.Copy(&buf, pr); err != nil {
+			t.Fatal(err)
+		}
+		outC <- buf.String()
+	}()
+
+	l, err := maillog.New("stderr", "").Init("http://schumacherfm.local")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wc := l.NewWriter()
+	defer wc.Close()
+
+	var testData = []byte(`Snowden: The @FBI is creating a world where citizens rely on #Apple to defend their rights, rather than the other way around. https://t.co/vdjB6CuB7k`)
+	n, err := wc.Write(testData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Exactly(t, len(testData), n)
+
+	// once finished with writing we must close the pipe
+	if err := pw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	assert.Exactly(t, string(testData), <-outC)
+}
+
+func TestLogger_MailDir_Stdout(t *testing.T) {
+	orgStdout := os.Stdout
+	defer func() {
+		os.Stdout = orgStdout
+	}()
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = pw
+	outC := make(chan string)
+	// copy the output in a separate goroutine so printing can't block indefinitely
+	go func() {
+		var buf bytes.Buffer
+		if _, err := io.Copy(&buf, pr); err != nil {
+			t.Fatal(err)
+		}
+		outC <- buf.String()
+	}()
+
+	l, err := maillog.New("stdout", "").Init("http://schumacherfm.local")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wc := l.NewWriter()
+	defer wc.Close()
+
+	var testData = []byte(`Snowden: The @FBI is creating a world where citizens rely on #Apple to defend their rights, rather than the other way around. https://t.co/vdjB6CuB7k`)
+	n, err := wc.Write(testData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Exactly(t, len(testData), n)
+
+	// once finished with writing we must close the pipe
+	if err := pw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	assert.Exactly(t, string(testData), <-outC)
+}
+
+func TestLogger_ErrDir_Stderr(t *testing.T) {
+	orgStdErr := os.Stderr
+	defer func() {
+		os.Stderr = orgStdErr
+	}()
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stderr = pw
+	outC := make(chan string)
+	// copy the output in a separate goroutine so printing can't block indefinitely
+	go func() {
+		var buf bytes.Buffer
+		if _, err := io.Copy(&buf, pr); err != nil {
+			t.Fatal(err)
+		}
+		outC <- buf.String()
+	}()
+
+	l, err := maillog.New("", "stderr").Init()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	const testData = `Snowden: The @FBI is creating a world where citizens rely on #Apple to defend their rights, rather than the other way around. https://t.co/vdjB6CuB7k`
+	l.Errorf(testData)
+
+	// once finished with writing we must close the pipe
+	if err := pw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	assert.Contains(t, <-outC, testData)
+
 }

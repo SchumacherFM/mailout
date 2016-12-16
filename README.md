@@ -10,8 +10,8 @@ Mailout config options in the Caddyfile:
 
 ```
 mailout [endpoint] {
-	maillog         [path/to/logdir]
-	errorlog        [path/to/logdir]
+	maillog         [path/to/logdir|stdout|stderr]
+	errorlog        [path/to/logdir|stdout|stderr]
 
 	to              email@address1.tld       
 	cc              ["email@address2.tld, email@addressN.tld"]        
@@ -33,16 +33,34 @@ mailout [endpoint] {
 }
 ```
 
-- endpoint: Can be any path but your POST request must match it. Default path: `/mailout`
-- [email-address]: if provided mails get encrypted. Set a path to a file, an environment variable or an URL to a key on a HTTPS site. Key = email address; value = PGP Key
-- maillog: Specify a directory, which gets created recursively, and emails will be written in there, as a backup. Leaving the maillog setting empty does not log anything. Every sent email is saved into its own file. Strict file permissions apply. 
-- errorlog: Specify a directory, which gets created recursively, and errors gets logged in there. Leaving the errorlog setting empty does not log anything. Strict file permissions apply. 
-- to, cc, bcc: Multiple email addresses must be separated by a colon and within double quotes.
+- endpoint: Can be any path but your POST request must match it. Default path:
+`/mailout`
+- [email-address]: if provided mails get encrypted. Set a path to a file, an
+environment variable or an URL to a key on a HTTPS site. Key = email address;
+value = PGP Key
+- maillog: Specify a directory, which gets created recursively, and emails will
+be written in there, as a backup. Leaving the maillog setting empty does not log
+anything. Every sent email is saved into its own file. Strict file permissions
+apply. If set to the value "stderr" or "stdout" (without the quotations), then
+the output will forwarded to those file descriptors.
+- errorlog: Specify a directory, which gets created recursively, and errors gets
+logged in there. Leaving the errorlog setting empty does not log anything.
+Strict file permissions apply. If set to the value "stderr" or "stdout" (without
+the quotations), then the output will forwarded to those file descriptors.
+- to, cc, bcc: Multiple email addresses must be separated by a colon and within
+double quotes.
 - subject: Has the same functionality as the body template, but text only.
-- body: Text or HTML template stored on the hard disk of your server. More details below.
-- username, password, host: Self explanatory, access credentials to the SMTP server.
-- port: Plain text on port 25, SSL uses port 465, for TLS use port 587. Internally for TLS the host name gets verified with the certificate of the SMTP server.
-- ratelimit_interval: the duration in which the capacity can be consumed. A duration string is a possibly signed sequence of decimal numbers, each with optional fraction and a unit suffix, such as "300ms", "1.5h" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h". Default: 24h  
+- body: Text or HTML template stored on the hard disk of your server. More
+details below.
+- username, password, host: Self explanatory, access credentials to the SMTP
+server.
+- port: Plain text on port 25, SSL uses port 465, for TLS use port 587.
+Internally for TLS the host name gets verified with the certificate of the SMTP
+server.
+- ratelimit_interval: the duration in which the capacity can be consumed. A
+duration string is a possibly signed sequence of decimal numbers, each with
+optional fraction and a unit suffix, such as "300ms", "1.5h" or "2h45m". Valid
+time units are "ns", "us" (or "µs"), "ms", "s", "m", "h". Default: 24h
 - ratelimit_capacity: the overall capacity within the interval. Default: 1000
 
 The default filename for an encrypted message attached to an email is: *encrypted.gpg*. 
@@ -51,15 +69,19 @@ The extension `.gpg` has been chosen to allow easy handling with [https://www.gn
 
 If you don't like this file name you can overwrite it with the key `publickeyAttachmentFileName`.
 
-To implement a fully working *This is an OpenPGP/MIME encrypted message (RFC 4880 and 3156)* PGP attachment, 
-I need some help. It's possible that the gomail package needs to be refactored.
+To implement a fully working *This is an OpenPGP/MIME encrypted message (RFC
+4880 and 3156)* PGP attachment, I need some help. It's possible that the gomail
+package needs to be refactored.
 
-Note on sensitive information leakage when using PGP with multiple email message receivers: For each 
-email address in the to, cc and bcc field you must add a public PGP key, if not, emails to recipients
-without a public key won't be encrypted. For all email addresses with a PGP key, the mailout middleware
-will send a separated email encrypted with the key of the receiver.
+Note on sensitive information leakage when using PGP with multiple email message
+receivers: For each email address in the to, cc and bcc field you must add a
+public PGP key, if not, emails to recipients without a public key won't be
+encrypted. For all email addresses with a PGP key, the mailout middleware will
+send a separated email encrypted with the key of the receiver.
 
-Rate limit: Does not require external storage since it uses an algorithm called [Token Bucket](http://en.wikipedia.org/wiki/Token_bucket) [(Go library: juju/ratelimit)](https://github.com/juju/ratelimit).
+Rate limit: Does not require external storage since it uses an algorithm called
+[Token Bucket](http://en.wikipedia.org/wiki/Token_bucket) [(Go library:
+juju/ratelimit)](https://github.com/juju/ratelimit).
 
 ### JSON API
 
@@ -101,19 +123,23 @@ Server response on internal errors:
 
 ### Email template
 
-The rendering engine for the email templates depends on the suffix of the template file name. 
+The rendering engine for the email templates depends on the suffix of the
+template file name.
 
-- `.txt`: Plain text template language [https://golang.org/pkg/text/template/](https://golang.org/pkg/text/template/).
-- `.html`: HTML template language [https://golang.org/pkg/html/template/](https://golang.org/pkg/html/template/).
+- `.txt`: Plain text template language
+[https://golang.org/pkg/text/template/](https://golang.org/pkg/text/template/).
+- `.html`: HTML template language
+[https://golang.org/pkg/html/template/](https://golang.org/pkg/html/template/).
 
 ### HTML form
 
 Create a simple HTML form with some JavaScript and AJAX functions.
 
-Mandatory input field is `email`. Optional recommended field: `name`. Those two fields
-will be later joined to create the `From:` header of an email.
+Mandatory input field is `email`. Optional recommended field: `name`. Those two
+fields will be later joined to create the `From:` header of an email.
 
-The following snipped has been extracted from a [Hugo](http://gohugo.io) template.
+The following snipped has been extracted from a [Hugo](http://gohugo.io)
+template.
 
 ```html
   <div id="contactThankYou" style="display:hidden;">Thank you for contacting us!</div>
@@ -202,14 +228,17 @@ If you use Gmail as outgoing server these pages can help:
 - [Google SMTP settings to send mail from a printer, scanner, or app](https://support.google.com/a/answer/176600)
 - [Allowing less secure apps to access your account](https://support.google.com/accounts/answer/6010255)
 
-I need some help to pimp the authentication feature of [gomail](https://github.com/go-gomail/gomail/blob/master/smtp.go#L41) to avoid switching on the less secure "feature". 
+I need some help to pimp the authentication feature of
+[gomail](https://github.com/go-gomail/gomail/blob/master/smtp.go#L41) to avoid
+switching on the less secure "feature".
 
 # Todo
 
 - file uploads
-- CORS
 - For each receiver email address its own PGP key.
 - implement ideas and improvements from open issues
+
+CORS please use the dedicated Caddy module for handling CORS requests.
 
 # Contribute
 
@@ -223,14 +252,13 @@ Multi-time pull request senders gets collaborator access.
 
 Copyright 2016 Cyrill Schumacher All Rights Reserved.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at
 
      http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Unless required by applicable law or agreed to in writing, software distributed
+under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.

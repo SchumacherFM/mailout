@@ -164,7 +164,7 @@ func (c *config) loadPGPKey(pathToKey string) (ent *openpgp.Entity, err error) {
 		}
 
 	} else {
-		if false == fileExists(pathToKey) {
+		if !fileExists(pathToKey) {
 			return nil, fmt.Errorf("File %q not found", pathToKey)
 		}
 		var f *os.File
@@ -218,7 +218,7 @@ func (c *config) pingSMTP() error {
 }
 
 func (c *config) loadTemplate() (err error) {
-	if false == fileExists(c.body) {
+	if !fileExists(c.body) {
 		return fmt.Errorf("[mailout] File %q not found", c.body)
 	}
 
@@ -250,7 +250,7 @@ func splitEmailAddresses(s string) ([]string, error) {
 	ret := strings.Split(s, emailSplitBy)
 	for i, val := range ret {
 		ret[i] = strings.TrimSpace(val)
-		if false == isValidEmail(ret[i]) {
+		if !isValidEmail(ret[i]) {
 			return nil, fmt.Errorf("[mailout] Incorrect Email address found in: %q", s)
 		}
 	}

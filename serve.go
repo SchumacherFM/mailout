@@ -66,7 +66,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 		}, w)
 	}
 
-	if e := r.PostFormValue("email"); false == isValidEmail(e) {
+	if e := r.PostFormValue("email"); !isValidEmail(e) {
 		return h.writeJSON(JSONError{
 			Code:  StatusUnprocessableEntity,
 			Error: fmt.Sprintf("Invalid email address: %q", e),
