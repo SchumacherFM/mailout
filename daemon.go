@@ -30,11 +30,7 @@ func goMailDaemonRecoverable(mc *config, rChan <-chan *http.Request) {
 
 func goMailDaemon(mc *config, rChan <-chan *http.Request) {
 	d := gomail.NewPlainDialer(mc.host, mc.port, mc.username, mc.password)
-	if mc.port == 587 {
-		d.TLSConfig = &tls.Config{
-			ServerName: mc.host, // host names must match between this one and the one requested in the cert.
-		}
-	}
+	d.TLSConfig = &tls.Config{ServerName: mc.host, InsecureSkipVerify: mc.skipTlsVerify}
 
 	var s gomail.SendCloser
 	var err error

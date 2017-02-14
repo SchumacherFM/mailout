@@ -1,6 +1,7 @@
 package mailout
 
 import (
+	"crypto/tls"
 	"fmt"
 	htpl "html/template"
 	"io"
@@ -12,9 +13,10 @@ import (
 	ttpl "text/template"
 	"time"
 
+	gomail "gopkg.in/gomail.v2"
+
 	"github.com/SchumacherFM/mailout/maillog"
 	"golang.org/x/crypto/openpgp"
-	"gopkg.in/gomail.v2"
 )
 
 const emailSplitBy = ","
@@ -88,6 +90,9 @@ type config struct {
 	//port            [ENV:MY_SMTP_PORT|25|587|465]
 	portRaw string
 	port    int
+
+	//skip tls verify
+	skipTlsVerify bool
 
 	rateLimitInterval time.Duration
 	rateLimitCapacity int64
@@ -210,6 +215,7 @@ func (c *config) loadFromEnv() error {
 
 func (c *config) pingSMTP() error {
 	d := gomail.NewPlainDialer(c.host, c.port, c.username, c.password)
+	d.TLSConfig = &tls.Config{ServerName: c.host, InsecureSkipVerify: c.skipTlsVerify}
 	sc, err := d.Dial()
 	if err != nil {
 		return err

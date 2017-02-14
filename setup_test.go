@@ -65,6 +65,7 @@ func TestSetupParse(t *testing.T) {
 				body            testdata/mail_tpl.html
 				host            127.0.0.1
 				port            25
+				skip_tls_verify
 			}`,
 			nil,
 			func() *config {
@@ -77,6 +78,7 @@ func TestSetupParse(t *testing.T) {
 				c.body = `testdata/mail_tpl.html`
 				c.host = "127.0.0.1"
 				c.portRaw = "25"
+				c.skipTlsVerify = true
 				return c
 			},
 		},
