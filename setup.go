@@ -2,7 +2,6 @@ package mailout
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -55,8 +54,6 @@ func setup(c *caddy.Controller) error {
 		}
 		return nil
 	})
-
-	fmt.Printf("%#v\n\n", c)
 
 	if moh, ok := c.ServerBlockStorage.(*handler); ok { // moh = mailOutHandler ;-)
 		httpserver.GetConfig(c).AddMiddleware(func(next httpserver.Handler) httpserver.Handler {
