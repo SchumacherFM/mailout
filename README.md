@@ -1,6 +1,7 @@
 # mailout - CaddyServer SMTP Client with PGP
 
-Post form data from a website to this route and receive the data as nicely formatted email.
+Post form data from a website to this route and receive the data as nicely
+formatted email.
 
 Supports Caddy >= v0.9
 
@@ -30,6 +31,8 @@ mailout [endpoint] {
 	
 	ratelimit_interval 24h
 	ratelimit_capacity 1000
+	
+	[skip_tls_verify]
 }
 ```
 
@@ -62,12 +65,17 @@ duration string is a possibly signed sequence of decimal numbers, each with
 optional fraction and a unit suffix, such as "300ms", "1.5h" or "2h45m". Valid
 time units are "ns", "us" (or "µs"), "ms", "s", "m", "h". Default: 24h
 - ratelimit_capacity: the overall capacity within the interval. Default: 1000
+- `skip_tls_verify` if added skips the TLS verification process otherwise
+hostnames must match.
 
-The default filename for an encrypted message attached to an email is: *encrypted.gpg*. 
+The default filename for an encrypted message attached to an email is:
+*encrypted.gpg*.
 
-The extension `.gpg` has been chosen to allow easy handling with [https://www.gnupg.org/](https://www.gnupg.org/)
+The extension `.gpg` has been chosen to allow easy handling with
+[https://www.gnupg.org/](https://www.gnupg.org/)
 
-If you don't like this file name you can overwrite it with the key `publickeyAttachmentFileName`.
+If you don't like this file name you can overwrite it with the key
+`publickeyAttachmentFileName`.
 
 To implement a fully working *This is an OpenPGP/MIME encrypted message (RFC
 4880 and 3156)* PGP attachment, I need some help. It's possible that the gomail
@@ -213,7 +221,8 @@ User Agent: {{.Form.Get "user_agent"}}
 
 ### HTML Form Fields
 
-A must-have form field is the email address: `<input type="text" name="email" value=""/>` or for HTML5 `<input type="email" name="email" value=""/>`
+A must-have form field is the email address: `<input type="text" name="email" value=""/>` 
+or for HTML5 `<input type="email" name="email" value=""/>`
 
 Optional field should be `name`: `<input type="text" name="name" value=""/>`
 
@@ -242,7 +251,8 @@ CORS please use the dedicated Caddy module for handling CORS requests.
 
 # Contribute
 
-Send me a pull request or open an issue if you encounter a bug or something can be improved!
+Send me a pull request or open an issue if you encounter a bug or something can
+be improved!
 
 Multi-time pull request senders gets collaborator access.
 

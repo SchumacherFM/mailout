@@ -13,10 +13,9 @@ import (
 	ttpl "text/template"
 	"time"
 
-	gomail "gopkg.in/gomail.v2"
-
 	"github.com/SchumacherFM/mailout/maillog"
 	"golang.org/x/crypto/openpgp"
+	gomail "gopkg.in/gomail.v2"
 )
 
 const emailSplitBy = ","
@@ -214,7 +213,7 @@ func (c *config) loadFromEnv() error {
 }
 
 func (c *config) pingSMTP() error {
-	d := gomail.NewPlainDialer(c.host, c.port, c.username, c.password)
+	d := gomail.NewDialer(c.host, c.port, c.username, c.password)
 	d.TLSConfig = &tls.Config{ServerName: c.host, InsecureSkipVerify: c.skipTlsVerify}
 	sc, err := d.Dial()
 	if err != nil {
