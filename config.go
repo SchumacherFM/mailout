@@ -62,6 +62,9 @@ type config struct {
 	// to /dev/null also logs errors.
 	maillog maillog.Logger
 
+	// from            sender_from@domain.email
+	from []string
+
 	// to              recipient_to@domain.email
 	to []string
 	// cc              recipient_cc1@domain.email, recipient_cc2@domain.email
