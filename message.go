@@ -107,6 +107,11 @@ func (bm message) setNonPGPRecipients(gm *gomail.Message) {
 }
 
 func (bm message) setFrom(gm *gomail.Message) {
+	if bm.mc.from {
+		gm.SetAddressHeader("From", bm.r.PostFormValue("email"), n)
+		return
+	}
+
 	if n := strings.TrimSpace(bm.r.PostFormValue("name")); n != "" {
 		gm.SetAddressHeader("From", bm.r.PostFormValue("email"), n)
 		return
