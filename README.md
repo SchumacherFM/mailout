@@ -15,56 +15,64 @@ mailout [endpoint] {
 	errorlog        [path/to/logdir|stdout|stderr]
 
 	to              email@address1.tld       
-	cc              ["email@address2.tld, email@addressN.tld"]        
-	bcc             ["email@addressN.tld, email@addressN.tld"]
+	[cc             "email@address2.tld, email@addressN.tld"]        
+	[bcc            "email@addressN.tld, email@addressN.tld"]
     subject         "Email from {{.firstname}} {{.lastname}}"
 	body            path/to/tpl.[txt|html]
+	[from_email     optional.senders@email.address]
+	[from_name      "Optional Senders Name"]
 
-	[email@address1.tld]       [path/to/pgp1.pub|ENV:MY_PGP_KEY_PATH_1|https://keybase.io/cyrill1/key.asc]
-	[email@address2.tld]       [path/to/pgp2.pub|ENV:MY_PGP_KEY_PATH_2|https://keybase.io/cyrill2/key.asc]
-	[email@addressN.tld]       [path/to/pgpN.pub|ENV:MY_PGP_KEY_PATH_N|https://keybase.io/cyrillN/key.asc]
+    [email@address1.tld     path/to/pgp1.pub|ENV:MY_PGP_KEY_PATH_1|https://keybase.io/cyrill1/key.asc]
+	[email@address2.tld     path/to/pgp2.pub|ENV:MY_PGP_KEY_PATH_2|https://keybase.io/cyrill2/key.asc]
+	[email@addressN.tld     path/to/pgpN.pub|ENV:MY_PGP_KEY_PATH_N|https://keybase.io/cyrillN/key.asc]
 
 	username        "ENV:MY_SMTP_USERNAME|gopher"
 	password        "ENV:MY_SMTP_PASSWORD|g0ph3r"
 	host            "ENV:MY_SMTP_HOST|smtp.gmail.com"
 	port             ENV:MY_SMTP_PORT|25|465|587
 	
-	ratelimit_interval 24h
-	ratelimit_capacity 1000
+	[ratelimit_interval 24h]
+	[ratelimit_capacity 1000]
 	
 	[skip_tls_verify]
 }
 ```
 
-- endpoint: Can be any path but your POST request must match it. Default path:
+Configuration values in brackets are optional.
+
+- `endpoint`: Can be any path but your POST request must match it. Default path:
 `/mailout`
 - [email-address]: if provided mails get encrypted. Set a path to a file, an
 environment variable or an URL to a key on a HTTPS site. Key = email address;
 value = PGP Key
-- maillog: Specify a directory, which gets created recursively, and emails will
+- `maillog`: Specify a directory, which gets created recursively, and emails will
 be written in there, as a backup. Leaving the maillog setting empty does not log
 anything. Every sent email is saved into its own file. Strict file permissions
 apply. If set to the value "stderr" or "stdout" (without the quotations), then
 the output will forwarded to those file descriptors.
-- errorlog: Specify a directory, which gets created recursively, and errors gets
+- `errorlog`: Specify a directory, which gets created recursively, and errors gets
 logged in there. Leaving the errorlog setting empty does not log anything.
 Strict file permissions apply. If set to the value "stderr" or "stdout" (without
 the quotations), then the output will forwarded to those file descriptors.
-- to, cc, bcc: Multiple email addresses must be separated by a colon and within
+- `to`, `cc`, `bcc`: Multiple email addresses must be separated by a colon and within
 double quotes.
-- subject: Has the same functionality as the body template, but text only.
-- body: Text or HTML template stored on the hard disk of your server. More
+- `subject`: Has the same functionality as the body template, but text only.
+- `body`: Text or HTML template stored on the hard disk of your server. More
 details below.
-- username, password, host: Self explanatory, access credentials to the SMTP
+- `from_email`: Email address of the sender, otherwise the email address of the
+HTML form from the front end gets used.
+- `from_name`: Name of the sender. If empty the email address in the field
+`from_email` gets used.
+- `username`, `password`, `host`: Self explanatory, access credentials to the SMTP
 server.
-- port: Plain text on port 25, SSL uses port 465, for TLS use port 587.
+- `port`: Plain text on port 25, SSL uses port 465, for TLS use port 587.
 Internally for TLS the host name gets verified with the certificate of the SMTP
 server.
-- ratelimit_interval: the duration in which the capacity can be consumed. A
+- `ratelimit_interval`: the duration in which the capacity can be consumed. A
 duration string is a possibly signed sequence of decimal numbers, each with
 optional fraction and a unit suffix, such as "300ms", "1.5h" or "2h45m". Valid
 time units are "ns", "us" (or "µs"), "ms", "s", "m", "h". Default: 24h
-- ratelimit_capacity: the overall capacity within the interval. Default: 1000
+- `ratelimit_capacity`: the overall capacity within the interval. Default: 1000
 - `skip_tls_verify` if added skips the TLS verification process otherwise
 hostnames must match.
 
@@ -90,6 +98,11 @@ send a separated email encrypted with the key of the receiver.
 Rate limit: Does not require external storage since it uses an algorithm called
 [Token Bucket](http://en.wikipedia.org/wiki/Token_bucket) [(Go library:
 juju/ratelimit)](https://github.com/juju/ratelimit).
+
+**Note**: Current architecture of the mailout pluging allows to set only one
+*endpoint and its configuration per virtual host. If you need more endpoints,
+*for different email receivers, you must create additional virtual hosts in
+*Caddy.
 
 ### JSON API
 
@@ -244,7 +257,6 @@ switching on the less secure "feature".
 # Todo
 
 - file uploads
-- For each receiver email address its own PGP key.
 - implement ideas and improvements from open issues
 
 CORS please use the dedicated Caddy module for handling CORS requests.

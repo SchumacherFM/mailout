@@ -197,7 +197,63 @@ func TestMessagePlainPGPMultipleKey(t *testing.T) {
 	assert.Contains(t, buf.String(), `Cc: pgp2@domain.email`)
 
 	//t.Log(buf.String())
+}
 
+func TestMessagePlainText_FromEmailName(t *testing.T) {
+
+	const caddyFile = `mailout {
+				from_email		marie@gold.grimm
+				from_name		"Gold Marie"
+				to              brothers@fairy-tales.grimm
+				subject         "Email from {{ .Form.Get \"firstname\" }} {{.Form.Get \"lastname\"}}"
+				body            testdata/mail_plainTextMessage.txt
+			}`
+
+	buf := new(bytes.Buffer)
+	srv := testMessageServer(t, caddyFile, buf, 1)
+	defer srv.Close()
+
+	data := make(url.Values)
+	data.Set("firstname", "Marie")
+	data.Set("lastname", "Pech")
+	data.Set("email", "marie@pech.grimm")
+	data.Set("name", "Pech Marie")
+
+	testDoPost(t, srv.URL, data)
+
+	assert.Len(t, buf.String(), 373) // whenever you change the template, change also here
+	assert.Contains(t, buf.String(), "Email marie@pech.grimm")
+	assert.Contains(t, buf.String(), `From: "Gold Marie" <marie@gold.grimm>`)
+	assert.Contains(t, buf.String(), "Subject: Email from Marie Pech")
+	//t.Log(buf.String())
+}
+
+func TestMessagePlainText_FromEmailOnly(t *testing.T) {
+
+	const caddyFile = `mailout {
+				from_email		marie@gold.grimm
+				to              brothers@fairy-tales.grimm
+				subject         "Email from {{ .Form.Get \"firstname\" }} {{.Form.Get \"lastname\"}}"
+				body            testdata/mail_plainTextMessage.txt
+			}`
+
+	buf := new(bytes.Buffer)
+	srv := testMessageServer(t, caddyFile, buf, 1)
+	defer srv.Close()
+
+	data := make(url.Values)
+	data.Set("firstname", "Marie")
+	data.Set("lastname", "Pech")
+	data.Set("email", "marie@pech.grimm")
+	data.Set("name", "Pech Marie")
+
+	testDoPost(t, srv.URL, data)
+
+	assert.Len(t, buf.String(), 358) // whenever you change the template, change also here
+	assert.Contains(t, buf.String(), "Email marie@pech.grimm")
+	assert.Contains(t, buf.String(), `From: marie@gold.grimm`)
+	assert.Contains(t, buf.String(), "Subject: Email from Marie Pech")
+	//t.Log(buf.String())
 }
 
 // 0.4.ms per PGP message

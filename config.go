@@ -63,7 +63,8 @@ type config struct {
 	maillog maillog.Logger
 
 	// from            sender_from@domain.email
-	from []string
+	fromEmail string
+	fromName  string // Name of the sender
 
 	// to              recipient_to@domain.email
 	to []string

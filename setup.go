@@ -103,6 +103,16 @@ func parse(c *caddy.Controller) (mc *config, _ error) {
 				} else {
 					mc.maillog.ErrDir = c.Val()
 				}
+			case "from_email":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				mc.fromEmail = c.Val()
+			case "from_name":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				mc.fromName = c.Val()
 			case "to":
 				if !c.NextArg() {
 					return nil, c.ArgErr()

@@ -82,6 +82,24 @@ func TestSetupParse(t *testing.T) {
 				return c
 			},
 		},
+		{
+			`mailout /testFrom {
+				recipient_to@domain.email testdata/B06469EE_nopw.pub.asc
+				to              recipient_to@domain.email
+				from_email	opensource@maintainer.org
+				from_name	"Open Source Maintainer"
+			}`,
+			nil,
+			func() *config {
+				c := newConfig()
+				c.pgpEmailKeys = []string{"recipient_to@domain.email", "testdata/B06469EE_nopw.pub.asc"}
+				c.endpoint = "/testFrom"
+				c.to = []string{"recipient_to@domain.email"}
+				c.fromEmail = "opensource@maintainer.org"
+				c.fromName = "Open Source Maintainer"
+				return c
+			},
+		},
 		// <NOT_IMPLEMENTED>
 		// You cannot define two endpoints for one host. this feature needs a total refactoring.
 		// therefore the /sales endpoint gets overwritten by the /repairs endpoint.
