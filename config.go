@@ -237,10 +237,11 @@ func (c *config) loadTemplate() (err error) {
 	case ".html":
 		c.bodyIsHTML = true
 		c.bodyTpl, err = htpl.ParseFiles(c.body)
-	}
-
-	if c.bodyTpl == nil && err == nil {
+	default:
 		return fmt.Errorf("[mailout] Incorrect file extension. Neither .txt nor .html: %q", c.body)
+	}
+	if err != nil {
+		return fmt.Errorf("[mailout] File %q not readable: %s", c.body, err)
 	}
 
 	c.subjectTpl, err = ttpl.New("").Parse(c.subject)
