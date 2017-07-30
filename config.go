@@ -95,7 +95,7 @@ type config struct {
 	port    int
 
 	//skip tls verify
-	skipTlsVerify bool
+	skipTLSVerify bool
 
 	rateLimitInterval time.Duration
 	rateLimitCapacity int64
@@ -218,7 +218,7 @@ func (c *config) loadFromEnv() error {
 
 func (c *config) pingSMTP() error {
 	d := gomail.NewDialer(c.host, c.port, c.username, c.password)
-	d.TLSConfig = &tls.Config{ServerName: c.host, InsecureSkipVerify: c.skipTlsVerify}
+	d.TLSConfig = &tls.Config{ServerName: c.host, InsecureSkipVerify: c.skipTLSVerify}
 	sc, err := d.Dial()
 	if err != nil {
 		return err

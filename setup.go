@@ -168,7 +168,7 @@ func parse(c *caddy.Controller) (mc *config, _ error) {
 				}
 				mc.portRaw = c.Val()
 			case "skip_tls_verify":
-				mc.skipTlsVerify = true
+				mc.skipTLSVerify = true
 			case "ratelimit_interval":
 				if !c.NextArg() {
 					return nil, c.ArgErr()

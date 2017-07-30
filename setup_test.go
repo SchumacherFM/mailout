@@ -78,7 +78,7 @@ func TestSetupParse(t *testing.T) {
 				c.body = `testdata/mail_tpl.html`
 				c.host = "127.0.0.1"
 				c.portRaw = "25"
-				c.skipTlsVerify = true
+				c.skipTLSVerify = true
 				return c
 			},
 		},

@@ -35,7 +35,7 @@ func goMailDaemon(mc *config, rChan <-chan *http.Request) {
 			ServerName: mc.host, // host names must match between this one and the one requested in the cert.
 		}
 	}
-	if mc.skipTlsVerify {
+	if mc.skipTLSVerify {
 		if d.TLSConfig == nil {
 			d.TLSConfig = &tls.Config{}
 		}
