@@ -20,6 +20,12 @@ http://schumacherfm.local:2015 {
         ratelimit_capacity 3
         ratelimit_interval 6s
     }
+    esi {
+        cmd_header_name X-Esi-Cmd
+        log_file ./testdata/cdy_test_2017_debug.log
+        log_level debug
+        resources ./CaddyfileResources.xml
+    }
 
 }
 
