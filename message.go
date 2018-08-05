@@ -12,7 +12,7 @@ import (
 	"github.com/SchumacherFM/mailout/bufpool"
 	"github.com/SchumacherFM/mailout/maillog"
 	"golang.org/x/crypto/openpgp"
-	"gopkg.in/gomail.v2"
+	"gopkg.in/gomail.v2" // TODO replace with github.com/go-mail/mail
 )
 
 // pgpStartText is a marker which denotes the end of the message and the start of

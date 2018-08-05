@@ -299,6 +299,7 @@ switching on the less secure "feature".
 
 - file uploads
 - implement ideas and improvements from open issues
+- Add reCAPTCHA [https://github.com/romanyx/recaptcha](https://github.com/romanyx/recaptcha)
 
 CORS please use the dedicated Caddy module for handling CORS requests.
 
