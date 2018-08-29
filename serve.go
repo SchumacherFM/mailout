@@ -23,7 +23,7 @@ const (
 	headerContentType         = "Content-Type"
 	headerApplicationJSONUTF8 = "application/json; charset=utf-8"
 	headerPNG                 = "image/png"
-)
+) 
 
 var MailSessionsStore = memstore.NewMemStore(
 	[]byte("authkey123"),
