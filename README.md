@@ -159,7 +159,7 @@ add to config: captcha
 After sending request:
 ```js
 var d = new Date();
-$("#captcha").attr("src", "/mail/captcha?" + d.getTime());
+$("#captcha").attr("src", "/mailout/captcha?" + d.getTime());
 ```
 https://github.com/steambap/captcha
 
