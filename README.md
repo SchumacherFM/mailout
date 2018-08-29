@@ -7,6 +7,24 @@ Supports Caddy >= v0.9
 
 Read more: [https://cyrillschumacher.com/projects/2016-02-26-mailout-caddyserver-email-smtp/](https://cyrillschumacher.com/projects/2016-02-26-mailout-caddyserver-email-smtp/)
 
+### + Captcha mod
+https://github.com/steambap/captcha
+
+https://github.com/quasoft/memstore
+
+Example:
+```html
+<div class="form-group text-center">
+ <img id="captcha" src="/mail/captcha" style="background-color: white">
+ <input type="text" id="captcha_text" name="captcha_text" class="form-control" placeholder="Captcha text" required>
+</div>
+```
+After sending request:
+```js
+var d = new Date();
+$("#captcha").attr("src", "/mail/captcha?" + d.getTime());
+```
+
 Mailout config options in the Caddyfile:
 
 ```
