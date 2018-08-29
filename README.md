@@ -1,4 +1,4 @@
-# mailout - CaddyServer SMTP Client with PGP
+# mailout - CaddyServer SMTP Client with PGP (+captcha)
 
 Post form data from a website to this route and receive the data as nicely
 formatted email.
@@ -6,27 +6,6 @@ formatted email.
 Supports Caddy >= v0.9
 
 Read more: [https://cyrillschumacher.com/projects/2016-02-26-mailout-caddyserver-email-smtp/](https://cyrillschumacher.com/projects/2016-02-26-mailout-caddyserver-email-smtp/)
-
-### + Captcha mod
-https://github.com/steambap/captcha
-
-https://github.com/quasoft/memstore
-
-Example:
-
-add to config: captcha
-```html
-<div class="form-group text-center">
- <img id="captcha" src="/mailout/captcha" style="background-color: white">
- <input type="text" id="captcha_text" name="captcha_text" class="form-control" placeholder="Captcha text" required>
-</div>
-```
-
-After sending request:
-```js
-var d = new Date();
-$("#captcha").attr("src", "/mail/captcha?" + d.getTime());
-```
 
 ### Mailout config options in the Caddyfile:
 
@@ -164,6 +143,29 @@ Server response on internal errors:
 500 Internal Server Error
 ```
 
+
+### Captcha
+
+Example:
+
+add to config: captcha
+```html
+<div class="form-group text-center">
+ <img id="captcha" src="/mailout/captcha" style="background-color: white">
+ <input type="text" id="captcha_text" name="captcha_text" class="form-control" placeholder="Captcha text" required>
+</div>
+```
+
+After sending request:
+```js
+var d = new Date();
+$("#captcha").attr("src", "/mail/captcha?" + d.getTime());
+```
+https://github.com/steambap/captcha
+
+https://github.com/quasoft/memstore
+
+
 ### Email template
 
 The rendering engine for the email templates depends on the suffix of the
@@ -275,6 +277,8 @@ If you use Gmail as outgoing server these pages can help:
 I need some help to pimp the authentication feature of
 [gomail](https://github.com/go-gomail/gomail/blob/master/smtp.go#L41) to avoid
 switching on the less secure "feature".
+
+
 
 # Todo
 
