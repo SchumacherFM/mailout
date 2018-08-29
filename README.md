@@ -54,6 +54,7 @@ mailout [endpoint] {
 	[ratelimit_capacity 1000]
 	
 	[skip_tls_verify]
+	[captcha]
 }
 ```
 
