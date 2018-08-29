@@ -13,6 +13,8 @@ https://github.com/steambap/captcha
 https://github.com/quasoft/memstore
 
 Example:
+
+add to config: captcha
 ```html
 <div class="form-group text-center">
  <img id="captcha" src="/mailout/captcha" style="background-color: white">
