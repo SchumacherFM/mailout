@@ -1,4 +1,6 @@
-# mailout - CaddyServer SMTP Client with PGP (+captcha)
+# mailout - CaddyServer SMTP Client with PGP + [captcha](#captcha)
+
+
 
 Post form data from a website to this route and receive the data as nicely
 formatted email.
