@@ -15,7 +15,7 @@ import (
 
 	"github.com/SchumacherFM/mailout/maillog"
 	"golang.org/x/crypto/openpgp"
-	gomail "gopkg.in/gomail.v2"
+	"gopkg.in/gomail.v2"
 )
 
 const emailSplitBy = ","
@@ -96,6 +96,9 @@ type config struct {
 
 	//skip tls verify
 	skipTLSVerify bool
+
+	// enable captcha
+	Captcha       bool
 
 	rateLimitInterval time.Duration
 	rateLimitCapacity int64
