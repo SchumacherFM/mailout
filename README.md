@@ -15,10 +15,11 @@ https://github.com/quasoft/memstore
 Example:
 ```html
 <div class="form-group text-center">
- <img id="captcha" src="/mail/captcha" style="background-color: white">
+ <img id="captcha" src="/mailout/captcha" style="background-color: white">
  <input type="text" id="captcha_text" name="captcha_text" class="form-control" placeholder="Captcha text" required>
 </div>
 ```
+
 After sending request:
 ```js
 var d = new Date();
