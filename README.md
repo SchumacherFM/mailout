@@ -25,7 +25,7 @@ var d = new Date();
 $("#captcha").attr("src", "/mail/captcha?" + d.getTime());
 ```
 
-Mailout config options in the Caddyfile:
+### Mailout config options in the Caddyfile:
 
 ```
 mailout [endpoint] {
