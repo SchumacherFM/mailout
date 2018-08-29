@@ -151,7 +151,7 @@ Example:
 add to config: captcha
 ```html
 <div class="form-group text-center">
- <img id="captcha" src="/mailout/captcha" style="background-color: white">
+ <img id="captcha" src="/mailout/captcha">
  <input type="text" id="captcha_text" name="captcha_text" class="form-control" placeholder="Captcha text" required>
 </div>
 ```
