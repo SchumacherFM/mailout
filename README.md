@@ -158,7 +158,7 @@ add to config: captcha
 </div>
 ```
 
-After sending request:
+After sending the request:
 ```js
 var d = new Date();
 $("#captcha").attr("src", "/mailout/captcha?" + d.getTime());
