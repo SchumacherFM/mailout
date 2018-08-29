@@ -8,6 +8,8 @@ import (
 	"github.com/SchumacherFM/mailout/bufpool"
 	"github.com/juju/ratelimit"
 	"github.com/mholt/caddy/caddyhttp/httpserver"
+	"github.com/quasoft/memstore"
+	"github.com/steambap/captcha"
 )
 
 // StatusUnprocessableEntity gets returned whenever parsing of the form fails.
@@ -20,6 +22,12 @@ const StatusEmpty = 0
 const (
 	headerContentType         = "Content-Type"
 	headerApplicationJSONUTF8 = "application/json; charset=utf-8"
+	headerPNG                 = "image/png"
+)
+
+var MailSessionsStore = memstore.NewMemStore(
+	[]byte("authkey123"),
+	[]byte("enckey12341234567890123456789012"),
 )
 
 func newHandler(mc *config, mailPipe chan<- *http.Request) *handler {
@@ -41,6 +49,28 @@ type handler struct {
 
 // ServeHTTP serves a request
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error) {
+
+	if r.URL.Path == h.config.endpoint+"/captcha" {
+		data, _ := captcha.New(150, 50)
+		session, err := MailSessionsStore.New(r, "captcha")
+		if err != nil {
+			return h.writeJSON(JSONError{
+				Code:  http.StatusOK,
+				Error: err.Error(),
+			}, w)
+		}
+		session.Values["captcha"] = data.Text
+		err = MailSessionsStore.Save(r, w, session)
+		if err != nil {
+			return h.writeJSON(JSONError{
+				Code:  http.StatusOK,
+				Error: err.Error(),
+			}, w)
+		}
+		w.Header().Set(headerContentType, headerPNG)
+		return http.StatusOK, data.WriteImage(w)
+	}
+
 	if r.URL.Path != h.config.endpoint {
 		return h.Next.ServeHTTP(w, r)
 	}
@@ -66,12 +96,30 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 		}, w)
 	}
 
+	session, err := MailSessionsStore.Get(r, "captcha")
+	if err != nil {
+		return h.writeJSON(JSONError{
+			Code:  http.StatusOK,
+			Error: err.Error(),
+		}, w)
+	}
+	text := r.PostFormValue("captcha_text")
+	if text != session.Values["captcha"] {
+		return h.writeJSON(JSONError{
+			Code:  http.StatusSeeOther,
+			Error: "Wrong captcha text: " + text,
+		}, w)
+	}
+
 	if e := r.PostFormValue("email"); !isValidEmail(e) {
 		return h.writeJSON(JSONError{
 			Code:  StatusUnprocessableEntity,
 			Error: fmt.Sprintf("Invalid email address: %q", e),
 		}, w)
 	}
+
+	session.Values["captcha"] = ""
+	MailSessionsStore.Save(r, w, session)
 
 	if h.reqPipe != nil {
 		h.reqPipe <- r // might block if the mail daemon is busy
