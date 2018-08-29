@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/SchumacherFM/mailout/bufpool"
+	"github.com/gorilla/sessions"
 	"github.com/juju/ratelimit"
 	"github.com/mholt/caddy/caddyhttp/httpserver"
 	"github.com/quasoft/memstore"
@@ -23,7 +24,7 @@ const (
 	headerContentType         = "Content-Type"
 	headerApplicationJSONUTF8 = "application/json; charset=utf-8"
 	headerPNG                 = "image/png"
-) 
+)
 
 var MailSessionsStore = memstore.NewMemStore(
 	[]byte("authkey123"),
@@ -50,25 +51,30 @@ type handler struct {
 // ServeHTTP serves a request
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error) {
 
-	if r.URL.Path == h.config.endpoint+"/captcha" {
-		data, _ := captcha.New(150, 50)
-		session, err := MailSessionsStore.New(r, "captcha")
-		if err != nil {
-			return h.writeJSON(JSONError{
-				Code:  http.StatusOK,
-				Error: err.Error(),
-			}, w)
+	// captcha
+	var err error
+	var session *sessions.Session
+	if h.config.Captcha {
+		if r.URL.Path == h.config.endpoint+"/captcha" {
+			data, _ := captcha.New(150, 50)
+			session, err = MailSessionsStore.New(r, "captcha")
+			if err != nil {
+				return h.writeJSON(JSONError{
+					Code:  http.StatusOK,
+					Error: err.Error(),
+				}, w)
+			}
+			session.Values["captcha"] = data.Text
+			err = MailSessionsStore.Save(r, w, session)
+			if err != nil {
+				return h.writeJSON(JSONError{
+					Code:  http.StatusOK,
+					Error: err.Error(),
+				}, w)
+			}
+			w.Header().Set(headerContentType, headerPNG)
+			return http.StatusOK, data.WriteImage(w)
 		}
-		session.Values["captcha"] = data.Text
-		err = MailSessionsStore.Save(r, w, session)
-		if err != nil {
-			return h.writeJSON(JSONError{
-				Code:  http.StatusOK,
-				Error: err.Error(),
-			}, w)
-		}
-		w.Header().Set(headerContentType, headerPNG)
-		return http.StatusOK, data.WriteImage(w)
 	}
 
 	if r.URL.Path != h.config.endpoint {
@@ -96,19 +102,22 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 		}, w)
 	}
 
-	session, err := MailSessionsStore.Get(r, "captcha")
-	if err != nil {
-		return h.writeJSON(JSONError{
-			Code:  http.StatusOK,
-			Error: err.Error(),
-		}, w)
-	}
-	text := r.PostFormValue("captcha_text")
-	if text != session.Values["captcha"] {
-		return h.writeJSON(JSONError{
-			Code:  http.StatusSeeOther,
-			Error: "Wrong captcha text: " + text,
-		}, w)
+	// captcha
+	if h.config.Captcha {
+		session, err = MailSessionsStore.Get(r, "captcha")
+		if err != nil {
+			return h.writeJSON(JSONError{
+				Code:  http.StatusOK,
+				Error: err.Error(),
+			}, w)
+		}
+		text := r.PostFormValue("captcha_text")
+		if text != session.Values["captcha"] {
+			return h.writeJSON(JSONError{
+				Code:  http.StatusSeeOther,
+				Error: "Wrong captcha text: " + text + " OK:" + session.Values["captcha"].(string),
+			}, w)
+		}
 	}
 
 	if e := r.PostFormValue("email"); !isValidEmail(e) {
@@ -118,8 +127,11 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 		}, w)
 	}
 
-	session.Values["captcha"] = ""
-	MailSessionsStore.Save(r, w, session)
+	// captcha
+	if h.config.Captcha {
+		session.Values["captcha"] = ""
+		MailSessionsStore.Save(r, w, session)
+	}
 
 	if h.reqPipe != nil {
 		h.reqPipe <- r // might block if the mail daemon is busy
