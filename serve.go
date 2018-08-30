@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/SchumacherFM/mailout/bufpool"
 	"github.com/gorilla/sessions"
@@ -25,6 +27,13 @@ const (
 	headerApplicationJSONUTF8 = "application/json; charset=utf-8"
 	headerPNG                 = "image/png"
 )
+
+type ReCaptchaResp struct {
+	Success     bool     `json:"success"`
+	ChallengeTs string    `json:"challenge_ts"`
+	Hostname    string   `json:"hostname"`
+	ErrorCodes  []string `json:"error-codes"`
+}
 
 var MailSessionsStore = memstore.NewMemStore(
 	[]byte("authkey123"),
@@ -51,16 +60,17 @@ type handler struct {
 // ServeHTTP serves a request
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error) {
 
-	// captcha
 	var err error
 	var session *sessions.Session
+
+	// captcha
 	if h.config.Captcha {
 		if r.URL.Path == h.config.endpoint+"/captcha" {
 			data, _ := captcha.New(150, 50)
 			session, err = MailSessionsStore.New(r, "captcha")
 			if err != nil {
 				return h.writeJSON(JSONError{
-					Code:  http.StatusOK,
+					Code:  http.StatusAccepted,
 					Error: err.Error(),
 				}, w)
 			}
@@ -68,7 +78,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 			err = MailSessionsStore.Save(r, w, session)
 			if err != nil {
 				return h.writeJSON(JSONError{
-					Code:  http.StatusOK,
+					Code:  http.StatusAccepted,
 					Error: err.Error(),
 				}, w)
 			}
@@ -107,15 +117,48 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 		session, err = MailSessionsStore.Get(r, "captcha")
 		if err != nil {
 			return h.writeJSON(JSONError{
-				Code:  http.StatusOK,
+				Code:  http.StatusAccepted,
 				Error: err.Error(),
 			}, w)
 		}
 		text := r.PostFormValue("captcha_text")
 		if text != session.Values["captcha"] {
+			session.Values["captcha"] = ""
+			MailSessionsStore.Save(r, w, session)
 			return h.writeJSON(JSONError{
-				Code:  http.StatusSeeOther,
-				Error: "Wrong captcha text: " + text + " OK:" + session.Values["captcha"].(string),
+				Code:  http.StatusAccepted,
+				Error: "Wrong captcha_text: " + text + " Correct: " + session.Values["captcha"].(string),
+			}, w)
+		}
+	}
+
+	// recaptcha
+	if h.config.ReCaptcha {
+		RecaptchaText := r.PostFormValue("g-recaptcha-response")
+		httpclient := http.Client{}
+		parts := url.Values{}
+		parts.Set("secret", h.config.ReCaptchaSecret)
+		parts.Set("response", RecaptchaText)
+		parts.Set("remoteip", r.RemoteAddr)
+		r, err := httpclient.PostForm("https://www.google.com/recaptcha/api/siteverify", parts)
+		if err != nil {
+			return h.writeJSON(JSONError{
+				Code:  http.StatusAccepted,
+				Error: err.Error(),
+			}, w)
+		}
+		resp := &ReCaptchaResp{}
+		err = json.NewDecoder(r.Body).Decode(resp)
+		if err != nil {
+			return h.writeJSON(JSONError{
+				Code:  http.StatusAccepted,
+				Error: err.Error(),
+			}, w)
+		}
+		if resp.Success != true {
+			return h.writeJSON(JSONError{
+				Code:  http.StatusAccepted,
+				Error: strings.Join(resp.ErrorCodes, "; "),
 			}, w)
 		}
 	}
