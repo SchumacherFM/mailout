@@ -1,4 +1,5 @@
-# mailout - CaddyServer SMTP Client with PGP + [captcha](#captcha)
+# mailout - CaddyServer SMTP Client with PGP 
+## + [captcha](#captcha) & [recaptcha](#recaptcha)
 
 
 
@@ -37,7 +38,11 @@ mailout [endpoint] {
 	[ratelimit_capacity 1000]
 	
 	[skip_tls_verify]
+	
 	[captcha]
+	
+	[recaptcha]
+	recaptcha_secret    [reCAPTCHA Secret key of your site]
 }
 ```
 
@@ -166,6 +171,15 @@ $("#captcha").attr("src", "/mailout/captcha?" + d.getTime());
 https://github.com/steambap/captcha
 
 https://github.com/quasoft/memstore
+
+### ReCaptcha
+Example:
+
+add to config: recaptcha and recaptcha_secret
+```
+recaptcha
+recaptcha_secret  6LdnR1QUAAAAAIdxxxxxxxxxxxxx
+```
 
 
 ### Email template
