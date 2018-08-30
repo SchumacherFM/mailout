@@ -30,7 +30,7 @@ const (
 
 type ReCaptchaResp struct {
 	Success     bool     `json:"success"`
-	ChallengeTs string    `json:"challenge_ts"`
+	ChallengeTs string   `json:"challenge_ts"`
 	Hostname    string   `json:"hostname"`
 	ErrorCodes  []string `json:"error-codes"`
 }
@@ -123,11 +123,12 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 		}
 		text := r.PostFormValue("captcha_text")
 		if text != session.Values["captcha"] {
+			correct := session.Values["captcha"].(string)
 			session.Values["captcha"] = ""
 			MailSessionsStore.Save(r, w, session)
 			return h.writeJSON(JSONError{
 				Code:  http.StatusAccepted,
-				Error: "Wrong captcha_text: " + text + " Correct: " + session.Values["captcha"].(string),
+				Error: "Wrong captcha_text: " + text + " Correct: " + correct,
 			}, w)
 		}
 	}
