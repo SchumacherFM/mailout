@@ -180,6 +180,7 @@ add to config: recaptcha and recaptcha_secret
 recaptcha
 recaptcha_secret  6LdnR1QUAAAAAIdxxxxxxxxxxxxx
 ```
+#### [Demo recaptcha + captcha](https://dev.avv.ovh/mailout-test/)
 
 
 ### Email template
