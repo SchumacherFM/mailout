@@ -98,7 +98,11 @@ type config struct {
 	skipTLSVerify bool
 
 	// enable captcha
-	Captcha       bool
+	Captcha bool
+
+	// enable recaptcha
+	ReCaptcha       bool
+	ReCaptchaSecret string
 
 	rateLimitInterval time.Duration
 	rateLimitCapacity int64
