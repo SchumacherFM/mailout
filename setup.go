@@ -169,6 +169,15 @@ func parse(c *caddy.Controller) (mc *config, _ error) {
 				mc.portRaw = c.Val()
 			case "skip_tls_verify":
 				mc.skipTLSVerify = true
+			case "captcha":
+				mc.Captcha = true
+			case "recaptcha":
+				mc.ReCaptcha = true
+			case "recaptcha_secret":
+				if !c.NextArg() {
+					return nil, c.ArgErr()
+				}
+				mc.ReCaptchaSecret = c.Val()
 			case "ratelimit_interval":
 				if !c.NextArg() {
 					return nil, c.ArgErr()

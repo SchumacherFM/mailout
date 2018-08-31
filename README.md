@@ -1,4 +1,5 @@
-# mailout - CaddyServer SMTP Client with PGP
+# mailout - CaddyServer SMTP Client with PGP 
+
 
 Post form data from a website to this route and receive the data as nicely
 formatted email.
@@ -7,7 +8,7 @@ Supports Caddy >= v0.9
 
 Read more: [https://cyrillschumacher.com/projects/2016-02-26-mailout-caddyserver-email-smtp/](https://cyrillschumacher.com/projects/2016-02-26-mailout-caddyserver-email-smtp/)
 
-Mailout config options in the Caddyfile:
+### Mailout config options in the Caddyfile:
 
 ```
 mailout [endpoint] {
@@ -35,6 +36,11 @@ mailout [endpoint] {
 	[ratelimit_capacity 1000]
 	
 	[skip_tls_verify]
+	
+	[captcha]
+	
+	[recaptcha]
+	recaptcha_secret    [reCAPTCHA Secret key of your site]
 }
 ```
 
@@ -141,6 +147,39 @@ Server response on internal errors:
 ```
 500 Internal Server Error
 ```
+
+
+### Captcha
+
+Example:
+
+add to config: captcha
+```html
+<div class="form-group text-center">
+ <img id="captcha" src="/mailout/captcha">
+ <input type="text" id="captcha_text" name="captcha_text" class="form-control" placeholder="Captcha text" required>
+</div>
+```
+
+After sending the request:
+```js
+var d = new Date();
+$("#captcha").attr("src", "/mailout/captcha?" + d.getTime());
+```
+https://github.com/steambap/captcha
+
+https://github.com/quasoft/memstore
+
+### ReCaptcha
+Example:
+
+add to config: recaptcha and recaptcha_secret
+```
+recaptcha
+recaptcha_secret  6LdnR1QUAAAAAIdxxxxxxxxxxxxx
+```
+#### [Demo recaptcha + captcha](https://dev.avv.ovh/mailout-test/)
+
 
 ### Email template
 
@@ -253,6 +292,8 @@ If you use Gmail as outgoing server these pages can help:
 I need some help to pimp the authentication feature of
 [gomail](https://github.com/go-gomail/gomail/blob/master/smtp.go#L41) to avoid
 switching on the less secure "feature".
+
+
 
 # Todo
 
