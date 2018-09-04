@@ -3,6 +3,7 @@ package mailout
 import (
 	"encoding/json"
 	"fmt"
+	"image/color"
 	"net/http"
 	"net/url"
 	"strings"
@@ -35,16 +36,16 @@ type ReCaptchaResp struct {
 	ErrorCodes  []string `json:"error-codes"`
 }
 
-var MailSessionsStore = memstore.NewMemStore(
-	[]byte("authkey123"),
-	[]byte("enckey12341234567890123456789012"),
-)
-
 func newHandler(mc *config, mailPipe chan<- *http.Request) *handler {
+
 	return &handler{
 		rlBucket: ratelimit.NewBucket(mc.rateLimitInterval, mc.rateLimitCapacity),
 		reqPipe:  mailPipe,
 		config:   mc,
+		memStore: memstore.NewMemStore(
+			[]byte("authkey123"),
+			[]byte("40Rf16fa4d0ba972048{40639e8012?a"),
+		),
 	}
 }
 
@@ -52,33 +53,38 @@ type handler struct {
 	// rlBucket rate limit bucket
 	rlBucket *ratelimit.Bucket
 	// reqPipe send request to somewhere else. can be nil for testing.
-	reqPipe chan<- *http.Request
-	config  *config
-	Next    httpserver.Handler
+	reqPipe  chan<- *http.Request
+	config   *config
+	Next     httpserver.Handler
+	memStore *memstore.MemStore
 }
 
 // ServeHTTP serves a request
-func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error) {
-
-	var err error
+func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (_ int, err error) {
 	var session *sessions.Session
 
 	// captcha
 	if h.config.Captcha {
 		if r.URL.Path == h.config.endpoint+"/captcha" {
-			data, _ := captcha.New(150, 50)
-			session, err = MailSessionsStore.New(r, "captcha")
+			data, _ := captcha.New(150, 60, func(o *captcha.Options) {
+				o.BackgroundColor = color.White
+				o.CharPreset = "ABCDEFGHKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"
+				o.FontDPI = 82
+				o.CurveNumber = 1
+				o.TextLength = 5
+			})
+			session, err = h.memStore.New(r, "captcha")
 			if err != nil {
 				return h.writeJSON(JSONError{
-					Code:  http.StatusAccepted,
+					Code:  http.StatusInternalServerError,
 					Error: err.Error(),
 				}, w)
 			}
 			session.Values["captcha"] = data.Text
-			err = MailSessionsStore.Save(r, w, session)
+			err = h.memStore.Save(r, w, session)
 			if err != nil {
 				return h.writeJSON(JSONError{
-					Code:  http.StatusAccepted,
+					Code:  http.StatusInternalServerError,
 					Error: err.Error(),
 				}, w)
 			}
@@ -114,20 +120,19 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 
 	// captcha
 	if h.config.Captcha {
-		session, err = MailSessionsStore.Get(r, "captcha")
+		session, err = h.memStore.Get(r, "captcha")
 		if err != nil {
 			return h.writeJSON(JSONError{
-				Code:  http.StatusAccepted,
+				Code:  http.StatusBadRequest,
 				Error: err.Error(),
 			}, w)
 		}
 		text := r.PostFormValue("captcha_text")
-		if text != session.Values["captcha"] {
-			correct := session.Values["captcha"].(string)
+		if correct, ok := session.Values["captcha"].(string); (ok && text != correct) || !ok {
 			session.Values["captcha"] = ""
-			MailSessionsStore.Save(r, w, session)
+			h.memStore.Save(r, w, session)
 			return h.writeJSON(JSONError{
-				Code:  http.StatusAccepted,
+				Code:  http.StatusUnauthorized,
 				Error: "Wrong captcha_text: " + text + " Correct: " + correct,
 			}, w)
 		}
@@ -144,7 +149,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 		r, err := httpclient.PostForm("https://www.google.com/recaptcha/api/siteverify", parts)
 		if err != nil {
 			return h.writeJSON(JSONError{
-				Code:  http.StatusAccepted,
+				Code:  http.StatusInternalServerError,
 				Error: err.Error(),
 			}, w)
 		}
@@ -152,13 +157,13 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 		err = json.NewDecoder(r.Body).Decode(resp)
 		if err != nil {
 			return h.writeJSON(JSONError{
-				Code:  http.StatusAccepted,
+				Code:  http.StatusInternalServerError,
 				Error: err.Error(),
 			}, w)
 		}
 		if resp.Success != true {
 			return h.writeJSON(JSONError{
-				Code:  http.StatusAccepted,
+				Code:  http.StatusInternalServerError,
 				Error: strings.Join(resp.ErrorCodes, "; "),
 			}, w)
 		}
@@ -174,7 +179,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error)
 	// captcha
 	if h.config.Captcha {
 		session.Values["captcha"] = ""
-		MailSessionsStore.Save(r, w, session)
+		h.memStore.Save(r, w, session)
 	}
 
 	if h.reqPipe != nil {

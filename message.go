@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-
 	"strings"
 
 	"github.com/SchumacherFM/mailout/bufpool"

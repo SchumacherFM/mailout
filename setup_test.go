@@ -167,7 +167,7 @@ func TestSetupParse(t *testing.T) {
 				recipient_to@domain.email 	testdata/B06469EE_nopw.pub.asc
 				recipient_cc1@domain.email
 			}`,
-			errors.New("Testfile:4 - Parse error: Wrong argument count or unexpected line ending after 'recipient_cc1@domain.email'"),
+			errors.New("Testfile:4 - Error during parsing: Wrong argument count or unexpected line ending after 'recipient_cc1@domain.email'"),
 			func() *config {
 				c := newConfig()
 				c.pgpEmailKeys = []string{
@@ -216,7 +216,7 @@ func TestSetupParse(t *testing.T) {
 				cc
 				bcc
 			}`,
-			errors.New("Testfile:2 - Parse error: Wrong argument count or unexpected line ending after 'to'"),
+			errors.New("Testfile:2 - Error during parsing: Wrong argument count or unexpected line ending after 'to'"),
 			func() *config {
 				c := newConfig()
 				c.endpoint = defaultEndpoint
@@ -290,7 +290,7 @@ func TestSetupParse(t *testing.T) {
 			`mailout {
 				publickeyAttachmentFileName
 			}`,
-			errors.New("Testfile:2 - Parse error: Wrong argument count or unexpected line ending after 'publickeyAttachmentFileName'"),
+			errors.New("Testfile:2 - Error during parsing: Wrong argument count or unexpected line ending after 'publickeyAttachmentFileName'"),
 			func() *config {
 				c := newConfig()
 				c.pgpAttachmentName = "encrypted.asc"
@@ -315,7 +315,7 @@ func TestSetupParse(t *testing.T) {
 				ratelimit_interval
 				ratelimit_capacity 500
 			}`,
-			errors.New("Testfile:2 - Parse error: Wrong argument count or unexpected line ending after 'ratelimit_interval'"),
+			errors.New("Testfile:2 - Error during parsing: Wrong argument count or unexpected line ending after 'ratelimit_interval'"),
 			func() *config {
 				c := newConfig()
 				return c
@@ -326,7 +326,7 @@ func TestSetupParse(t *testing.T) {
 				ratelimit_interval 6h
 				ratelimit_capacity
 			}`,
-			errors.New("Testfile:3 - Parse error: Wrong argument count or unexpected line ending after 'ratelimit_capacity'"),
+			errors.New("Testfile:3 - Error during parsing: Wrong argument count or unexpected line ending after 'ratelimit_capacity'"),
 			func() *config {
 				c := newConfig()
 				return c
