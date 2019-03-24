@@ -185,6 +185,15 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) (_ int, err 
 	if h.reqPipe != nil {
 		h.reqPipe <- r // might block if the mail daemon is busy
 	}
+
+	// redirection
+	if h.config.redirectField != "" {
+		target := r.PostFormValue(h.config.redirectField)
+		if target != "" {
+			http.Redirect(w, r, target, http.StatusSeeOther)
+		}
+	}
+
 	return h.writeJSON(JSONError{Code: http.StatusOK}, w)
 }
 

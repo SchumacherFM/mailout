@@ -37,6 +37,8 @@ mailout [endpoint] {
 	
 	[skip_tls_verify]
 	
+        [redirect_field "optional name of form field used for redirection url"]
+
 	[captcha]
 	
 	[recaptcha]
@@ -81,6 +83,7 @@ time units are "ns", "us" (or "µs"), "ms", "s", "m", "h". Default: 24h
 - `ratelimit_capacity`: the overall capacity within the interval. Default: 1000
 - `skip_tls_verify` if added skips the TLS verification process otherwise
 hostnames must match.
+- `redirect_field`: Form field name to use to configure redirection URL.
 
 The default filename for an encrypted message attached to an email is:
 *encrypted.gpg*.
@@ -281,6 +284,10 @@ Optional field should be `name`: `<input type="text" name="name" value=""/>`
 Both fields will be merged to the `From` Email address: `"name" <email@address>`.
 
 If you do not provide the name field, only the email address will be used.
+
+If a `redirect_field` has been configured and the form contains a matching
+field, its value will be used to redirect the user's browser after successful
+form submission.
 
 ### GMail
 
