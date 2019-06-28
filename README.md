@@ -282,6 +282,25 @@ Both fields will be merged to the `From` Email address: `"name" <email@address>`
 
 If you do not provide the name field, only the email address will be used.
 
+### Testing
+
+To do a quick test of the configuration for mailout on your Caddy server, the
+following plain vanilla JavaScript using XMLHttpRequest does the job.
+
+```
+var xhr = new XMLHttpRequest();
+
+xhr.open('POST', '/message'); // Change if /message is not your configured endpoint
+xhr.onreadystatechange = function () { console.log(this.responseText); }
+
+// Use this header for the paramater format below
+xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+var params = 'name=Matt&email=' + encodeURIComponent('matt@github.com');
+
+// Send the email
+xhr.send(params);
+```
+
 ### GMail
 
 If you use Gmail as outgoing server these pages can help:
