@@ -284,7 +284,6 @@ If you do not provide the name field, only the email address will be used.
 
 ### Testing
 
-
 #### JavaScript
 
 To do a quick test of the configuration for mailout on your Caddy server, the
