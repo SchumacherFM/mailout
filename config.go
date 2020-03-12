@@ -97,6 +97,9 @@ type config struct {
 	//skip tls verify
 	skipTLSVerify bool
 
+	// specify form field used for redirect urls
+	redirectField string
+
 	// enable captcha
 	Captcha bool
 

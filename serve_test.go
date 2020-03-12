@@ -166,3 +166,59 @@ func TestServeHTTP_RateLimitShouldBeApplied(t *testing.T) {
 	assert.Exactly(t, http.StatusOK, w.Code, "Request %d", i)
 	assert.Len(t, w.HeaderMap, 1, "Request %d", i)
 }
+
+func TestServeHTTP_ShouldRedirectToGivenURL(t *testing.T) {
+
+	h := newTestHandler(t, `mailout {
+		redirect_field redirect_to
+	}`)
+
+	data := make(url.Values)
+	data.Set("firstname", "Ken")
+	data.Set("lastname", "Thompson")
+	data.Set("email", "ken@thompson.email")
+	data.Set("redirect_to", "http://foo.com/bar")
+
+	req, err := http.NewRequest("POST", "/mailout", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.PostForm = data
+
+	w := httptest.NewRecorder()
+	code, err := h.ServeHTTP(w, req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Exactly(t, StatusEmpty, code)
+	assert.Exactly(t, http.StatusSeeOther, w.Code)
+	assert.Exactly(t, "http://foo.com/bar", w.HeaderMap.Get("Location"))
+}
+
+func TestServeHTTP_ShouldNotRedirectWithoutRedirectionField(t *testing.T) {
+
+	h := newTestHandler(t, `mailout {
+		redirect_field redirect_to
+	}`)
+
+	data := make(url.Values)
+	data.Set("firstname", "Ken")
+	data.Set("lastname", "Thompson")
+	data.Set("email", "ken@thompson.email")
+	data.Set("redirect_url", "http://foo.com/bar")		// wrong field name!
+
+	req, err := http.NewRequest("POST", "/mailout", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.PostForm = data
+
+	w := httptest.NewRecorder()
+	code, err := h.ServeHTTP(w, req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Exactly(t, StatusEmpty, code)
+	assert.Exactly(t, http.StatusOK, w.Code)
+	assert.Exactly(t, "", w.HeaderMap.Get("Location"))
+}
