@@ -289,6 +289,36 @@ If a `redirect_field` has been configured and the form contains a matching
 field, its value will be used to redirect the user's browser after successful
 form submission.
 
+### Testing
+
+#### JavaScript
+
+To do a quick test of the configuration for mailout on your Caddy server, the
+following plain vanilla JavaScript using XMLHttpRequest does the job.
+
+```
+var xhr = new XMLHttpRequest();
+
+xhr.open('POST', '/mailout'); // Change if /mailout is not your configured endpoint
+xhr.onreadystatechange = function () { console.log(this.responseText); }
+
+// Use this header for the paramater format below
+xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+var params = 'name=Matt&email=' + encodeURIComponent('matt@github.com');
+
+// Send the email
+xhr.send(params);
+```
+
+#### CURL
+
+If you are on a commandline console, the following CURL command also issues a
+POST request with the name and email fields:
+
+```
+curl http://example.com/mailout -d 'name=Matt&email=matt@github.com'
+```
+
 ### GMail
 
 If you use Gmail as outgoing server these pages can help:

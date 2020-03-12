@@ -10,7 +10,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/mholt/caddy"
+	"github.com/caddyserver/caddy"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -144,7 +144,7 @@ func TestConfigLoadPGPKeyHDD(t *testing.T) {
 			`mailout {
 				go@ogle.com testdata/B06469EE_nopw.priv.asc
 			}`,
-			errors.New("[mailout] Cannot load PGP key for email address \"go@ogle.com\" with error: [mailout] PrivateKey found. Not allowed. Please remove it from resouce: \"testdata/B06469EE_nopw.priv.asc\""),
+			errors.New("[mailout] Cannot load PGP key for email address \"go@ogle.com\" with error: [mailout] PrivateKey found. Not allowed. Please remove it from resource: \"testdata/B06469EE_nopw.priv.asc\""),
 			true,
 		},
 		{

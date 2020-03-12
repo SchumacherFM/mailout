@@ -206,7 +206,7 @@ func (c *config) loadPGPKey(pathToKey string) (ent *openpgp.Entity, err error) {
 
 	if ent.PrivateKey != nil {
 		ent = nil
-		err = fmt.Errorf("[mailout] PrivateKey found. Not allowed. Please remove it from resouce: %q", pathToKey)
+		err = fmt.Errorf("[mailout] PrivateKey found. Not allowed. Please remove it from resource: %q", pathToKey)
 	}
 	return
 }
