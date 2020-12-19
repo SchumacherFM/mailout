@@ -1,10 +1,10 @@
-# mailout - CaddyServer SMTP Client with PGP 
+# mailout - SMTP Client with PGP for Caddy v1 
 
 
 Post form data from a website to this route and receive the data as nicely
 formatted email.
 
-Supports Caddy >= v0.9
+Supports Caddy, the web server: >= v0.9 < 2
 
 Read more: [https://cyrillschumacher.com/projects/2016-02-26-mailout-caddyserver-email-smtp/](https://cyrillschumacher.com/projects/2016-02-26-mailout-caddyserver-email-smtp/)
 
@@ -18,12 +18,12 @@ mailout [endpoint] {
 	to              email@address1.tld       
 	[cc             "email@address2.tld, email@addressN.tld"]        
 	[bcc            "email@addressN.tld, email@addressN.tld"]
-    subject         "Email from {{.firstname}} {{.lastname}}"
+	subject         "Email from {{.firstname}} {{.lastname}}"
 	body            path/to/tpl.[txt|html]
 	[from_email     optional.senders@email.address]
 	[from_name      "Optional Senders Name"]
 
-    [email@address1.tld     path/to/pgp1.pub|ENV:MY_PGP_KEY_PATH_1|https://keybase.io/cyrill1/key.asc]
+	[email@address1.tld     path/to/pgp1.pub|ENV:MY_PGP_KEY_PATH_1|https://keybase.io/cyrill1/key.asc]
 	[email@address2.tld     path/to/pgp2.pub|ENV:MY_PGP_KEY_PATH_2|https://keybase.io/cyrill2/key.asc]
 	[email@addressN.tld     path/to/pgpN.pub|ENV:MY_PGP_KEY_PATH_N|https://keybase.io/cyrillN/key.asc]
 
